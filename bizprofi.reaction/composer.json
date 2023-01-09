@@ -1,0 +1,28 @@
+{
+    "name": "bizprofi/bitrix24-reaction",
+    "authors": [
+        {
+            "name": "Alles Aleksey",
+            "email": "aa.alles@bizprofi.ru"
+        }
+    ],
+    "require": {
+        "php": ">=7.0",
+        "bizprofi/tools-module": "^1.0",
+        "bizprofi/tools-lang": "^1.0"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@gitlab.magnifico.pro:tools/module.git"
+        },
+        {
+            "type": "vcs",
+            "url": "git@gitlab.magnifico.pro:tools/lang.git"
+        },
+        {
+            "type": "vcs",
+            "url": "git@gitlab.magnifico.pro:github/bitrix-migration.git"
+        }
+    ]
+}
