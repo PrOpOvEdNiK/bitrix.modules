@@ -43,8 +43,8 @@ class NotificationResponsibleTable extends DataManager
         ];
     }
 
-    //очищает отмеченных в сущности, используется в статусах
-    public static function clearResponsible(int $entityId, int $entityType, int $userId)
+    //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    public static function clearResponsible($entityId, $entityType, $userId)
     {
         $connection = static::getEntity()->getConnection();
         $connection->startTransaction();

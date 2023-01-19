@@ -68,7 +68,7 @@ trait BlogPostHandlers
         }
     }
 
-    public function OnPostDelete($id)
+    public static function OnPostDelete($id)
     {
         //�� id ����������� ������ ����� ��������������� ������ �����������
         $notyCollection = NotificationTable::query()
