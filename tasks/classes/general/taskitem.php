@@ -2191,6 +2191,7 @@ final class CTaskItem implements CTaskItemInterface, ArrayAccess
 		}
 		elseif (!$this->checkAccess(ActionDictionary::ACTION_TASK_SAVE, $newTask))
 		{
+			$controller = self::getAccessController((int) $this->executiveUserId);
 			throw new TasksException(
 				GetMessage('TASKS_ACCESS_DENIED_TO_TASK_UPDATE'),
 				TasksException::TE_ACTION_NOT_ALLOWED

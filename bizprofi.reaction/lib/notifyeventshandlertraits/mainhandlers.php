@@ -89,7 +89,7 @@ trait MainHandlers
             if (NotificationTable::isExistNoty($userId, NotificationBindingTable::COMMENT_REPORT_ENTITY, $row['ID'])) {
                 NotificationResponsibleTable::clearResponsible($row['LOG_ID'], NotificationBindingTable::SOC_LOG_REPORT_ENTITY, $userId);
 
-                NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::SOC_LOG_REPORT_ENTITY, $row['LOG_ID'], NotificationTable::NEED_REACTION);
+                NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::SOC_LOG_REPORT_ENTITY, (int)$row['LOG_ID'], NotificationTable::NEED_REACTION);
 
                 return;
             }
@@ -100,7 +100,7 @@ trait MainHandlers
             if (NotificationTable::isExistNoty($userId, NotificationBindingTable::MESSAGE_ENTITY, $messageId)) {
                 NotificationResponsibleTable::clearResponsible($taskId, NotificationBindingTable::TASK_ENTITY, $userId);
 
-                NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::TASK_ENTITY, $taskId, NotificationTable::NEED_REACTION);
+                NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::TASK_ENTITY, (int)$taskId, NotificationTable::NEED_REACTION);
 
                 return;
             }
@@ -109,12 +109,12 @@ trait MainHandlers
         // ��������� ���������� ����������������� ��� FORUM_POST � ��� ��������� �������� id, � ��������� ��� LOG_COMMENT, � ��������� id �������� ������
         if ('FORUM_POST' === $data['ENTITY_TYPE_ID']) {
             NotificationResponsibleTable::clearResponsible($row['LOG_ID'], NotificationBindingTable::SOC_LOG, $userId);
-            NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::SOC_LOG_COMMENT, $row['ID'], NotificationTable::NEED_REACTION);
+            NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::SOC_LOG_COMMENT, (int)$row['ID'], NotificationTable::NEED_REACTION);
         }
 
         if ('LOG_COMMENT' === $data['ENTITY_TYPE_ID']) {
             NotificationResponsibleTable::clearResponsible($row['LOG_ID'], NotificationBindingTable::SOC_LOG, $userId);
-            NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::SOC_LOG_COMMENT, $data['ENTITY_ID'], NotificationTable::NEED_REACTION);
+            NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::SOC_LOG_COMMENT, (int)$data['ENTITY_ID'], NotificationTable::NEED_REACTION);
         }
 
         // ��� ����� ������� ����� � CRM ������� ������������� ������ ����� ������ ������
