@@ -93,7 +93,7 @@ class Application
 						'BY_SUBSCRIPTION' => $appDetailInfo['BY_SUBSCRIPTION'] === 'Y' ? 'Y' : 'N',
 					];
 
-					if (isset($checkHash, $installHash))
+					if (!empty($checkHash) && !empty($installHash))
 					{
 						$queryFields['CHECK_HASH'] = $checkHash;
 						$queryFields['INSTALL_HASH'] = $installHash;

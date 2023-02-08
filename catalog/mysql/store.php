@@ -90,7 +90,11 @@ class CCatalogStore extends CAllCatalogStore
 		}
 		$productID = '(';
 
-		if (is_array($arFilter["PRODUCT_ID"]))
+		if (empty($arFilter["PRODUCT_ID"]))
+		{
+			$productID = '0)';
+		}
+		elseif (is_array($arFilter["PRODUCT_ID"]))
 		{
 			foreach($arFilter["PRODUCT_ID"] as $id)
 				$productID .= intval($id).',';

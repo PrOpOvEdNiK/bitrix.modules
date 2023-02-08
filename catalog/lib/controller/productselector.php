@@ -249,12 +249,14 @@ class ProductSelector extends JsonController
 		$builder = new BasketBuilder();
 		$basketItem = $builder->createItem();
 		$basketItem->setSku($sku);
-		if ($options['priceId'] && (int)$options['priceId'] > 0)
+
+		$priceId = (int)($options['priceId'] ?? 0);
+		if ($priceId > 0)
 		{
-			$basketItem->setPriceGroupId((int)$options['priceId']);
+			$basketItem->setPriceGroupId($priceId);
 		}
 
-		if ($options['urlBuilder'])
+		if (!empty($options['urlBuilder']))
 		{
 			$basketItem->setDetailUrlManagerType($options['urlBuilder']);
 		}

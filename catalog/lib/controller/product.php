@@ -51,12 +51,11 @@ class Product extends Controller implements EventBindInterface
 		if (!$r->isSuccess())
 		{
 			$this->addErrors($r->getErrors());
+
 			return null;
 		}
-		else
-		{
-			return parent::processBeforeAction($action);
-		}
+
+		return parent::processBeforeAction($action);
 	}
 
 	/**
@@ -124,7 +123,7 @@ class Product extends Controller implements EventBindInterface
 		}
 	}
 
-	static protected function perfGetList(array $select, array $filter, array $order, $pageNavigation): array
+	static protected function perfGetList(array $select, array $filter, array $order, $pageNavigation = null): array
 	{
 		$rawRows = [];
 		$elementIds = [];
@@ -133,7 +132,7 @@ class Product extends Controller implements EventBindInterface
 			$order,
 			$filter,
 			false,
-			$pageNavigation,
+			$pageNavigation ?? false,
 			array('ID', 'IBLOCK_ID')
 		);
 		while($row = $rsData->Fetch())
@@ -158,7 +157,14 @@ class Product extends Controller implements EventBindInterface
 		return $rawRows;
 	}
 
-	public function listAction($select=[], $filter=[], $order=[], PageNavigation $pageNavigation): ?Page
+	/**
+	 * @param $select
+	 * @param $filter
+	 * @param $order
+	 * @param PageNavigation $pageNavigation
+	 * @return Page|null
+	 */
+	public function listAction(PageNavigation $pageNavigation, array $select = [], array $filter = [], array $order = []): ?Page
 	{
 		$r = $this->checkPermissionIBlockElementList($filter['IBLOCK_ID']);
 		if($r->isSuccess())
@@ -178,7 +184,6 @@ class Product extends Controller implements EventBindInterface
 
 			$propertyFields = $this->preparePropertyFields($propertyFields);
 			$propertyIds = array_keys($propertyFields);
-
 			$list = self::perfGetList(array_merge($productFields, $elementFields), $filter, $order, self::getNavData($pageNavigation->getOffset()));
 			$this->attachPropertyValues($list, (int)$filter['IBLOCK_ID'], $propertyIds);
 

@@ -292,11 +292,10 @@ class BasketItem
 			$displayProperty = array_merge(
 				$propertySettings,
 				[
-					'DESCRIPTION' => $valueInfo['DESCRIPTION'],
-					'~DESCRIPTION' => $valueInfo['DESCRIPTION'],
+					'DESCRIPTION' => $valueInfo['DESCRIPTION'] ?? null,
+					'~DESCRIPTION' => $valueInfo['DESCRIPTION'] ?? null,
 					'VALUE' => $value,
 					'~VALUE' => $value,
-					'~PROPERTY_VALUE_ID' => $valueInfo['PROPERTY_VALUE_ID'],
 				]
 			);
 
