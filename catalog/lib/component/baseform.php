@@ -531,12 +531,7 @@ abstract class BaseForm
 						$editValue = $value;
 					}
 
-					$imageExtensions = explode(',', \CFile::GetImageExtensions());
-					$fileExtensions = explode(',', $description['settings']['FILE_TYPE']);
-					$fileExtensions = array_map('trim', $fileExtensions);
-
-					$diffExtensions = array_diff($fileExtensions, $imageExtensions);
-					$isImageInput = empty($diffExtensions);
+					$isImageInput = $this->isImageProperty($description['settings']);
 
 					$descriptionSingle = $description;
 					$descriptionSingle['settings']['MULTIPLE'] = false;
@@ -554,12 +549,7 @@ abstract class BaseForm
 					}
 					else
 					{
-						$controlId = FileInputUtility::instance()->getUserFieldCid([
-							'ID' => $description['settings']['ID'],
-							'ENTITY_ID' => $description['propertyId'],
-							'MULTIPLE' => $description['settings']['MULTIPLE'],
-							'FIELD_NAME' => $description['name'],
-						]);
+						$controlId = $description['name'] . '_uploader_' . $this->entity->getId();
 
 						$additionalValues[$descriptionData['view']] = '';
 						$additionalValues[$descriptionData['viewList']]['SINGLE'] = '';
@@ -719,6 +709,17 @@ abstract class BaseForm
 		}
 
 		return $additionalValues;
+	}
+
+	public function isImageProperty(array $propertySettings): bool
+	{
+		$fileTypes = (string)$propertySettings['FILE_TYPE'];
+		$imageExtensions = explode(',', \CFile::GetImageExtensions());
+		$fileExtensions = explode(',', $fileTypes);
+		$fileExtensions = array_map('trim', $fileExtensions);
+
+		$diffExtensions = array_diff($fileExtensions, $imageExtensions);
+		return empty($diffExtensions);
 	}
 
 	private function getAdditionalMoneyValues(string $value, callable $formatMethod): array

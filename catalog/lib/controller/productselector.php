@@ -8,6 +8,7 @@ use Bitrix\Catalog\Component\ImageInput;
 use Bitrix\Catalog\MeasureTable;
 use Bitrix\Catalog\ProductTable;
 use Bitrix\Catalog\StoreBarcodeTable;
+use Bitrix\Catalog\UI\PropertyProduct;
 use Bitrix\Catalog\v2\Barcode\Barcode;
 use Bitrix\Catalog\v2\BaseIblockElementEntity;
 use Bitrix\Catalog\v2\Image\DetailImage;
@@ -299,6 +300,8 @@ class ProductSelector extends JsonController
 			$purchasingCurrency = $options['currency'];
 		}
 
+		$productProps = $this->getProductProperties($sku);
+
 		$fields = [
 			'TYPE' => $sku->getType(),
 			'ID' => $formFields['skuId'],
@@ -321,7 +324,12 @@ class ProductSelector extends JsonController
 			'VAT_ID' => $formFields['taxId'],
 			'VAT_INCLUDED' => $formFields['taxIncluded'],
 			'BRANDS' => $this->getProductBrand($sku),
+			'WEIGHT' => $formFields['weight'],
+			'DIMENSIONS' => $formFields['dimensions'],
+			'PRODUCT_PROPERTIES' => $productProps,
 		];
+
+		$fields = array_merge($fields, $productProps);
 
 		$previewImage = $sku->getFrontImageCollection()->getFrontImage();
 		if ($previewImage)
@@ -408,6 +416,30 @@ class ProductSelector extends JsonController
 		}
 
 		return $selectedBrandItems;
+	}
+
+	private function getProductProperties(BaseSku $sku): array
+	{
+		$columns = PropertyProduct::getColumnNames();
+		$emptyProps = [];
+		foreach ($columns as $columnName)
+		{
+			$emptyProps[$columnName] = '';
+		}
+
+		$productId = $sku->getParent()->getId();
+		$productIblockId = $sku->getIblockInfo()->getProductIblockId();
+		$productProps = PropertyProduct::getIblockProperties($productIblockId, $productId);
+
+		$skuId = $sku->getId();
+		$skuIblockId = $sku->getIblockId();
+		$skuProps = [];
+		if ($skuId && $skuIblockId)
+		{
+			$skuProps = PropertyProduct::getSkuProperties($skuIblockId, $skuId);
+		}
+
+		return array_merge($emptyProps, $productProps, $skuProps);
 	}
 
 	public function createProductAction(array $fields): ?array

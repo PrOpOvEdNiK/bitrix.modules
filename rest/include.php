@@ -2,8 +2,6 @@
 
 require_once __DIR__.'/autoload.php';
 
-include("module_updater.php");
-
 class CRestEventHandlers
 {
 	public static function OnBeforeProlog()

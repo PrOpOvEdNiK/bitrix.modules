@@ -223,9 +223,9 @@ class Product extends Controller implements EventBindInterface
 		}
 	}
 
-	public function addAction($fields): ?array
+	public function addAction(array $fields): ?array
 	{
-		$r = $this->checkPermissionIBlockElementAdd($fields['IBLOCK_ID']);
+		$r = $this->checkPermissionAdd($fields['IBLOCK_ID']);
 		if($r->isSuccess())
 		{
 			if(isset($fields['IBLOCK_SECTION_ID']) && intval($fields['IBLOCK_SECTION_ID']>0))
@@ -281,9 +281,9 @@ class Product extends Controller implements EventBindInterface
 		}
 	}
 
-	public function updateAction($id, array $fields): ?array
+	public function updateAction(int $id, array $fields): ?array
 	{
-		$r = $this->checkPermissionIBlockElementUpdate($id);
+		$r = $this->checkPermissionUpdate($id);
 		if($r->isSuccess())
 		{
 			if(isset($fields['IBLOCK_SECTION_ID']) && intval($fields['IBLOCK_SECTION_ID']>0))
@@ -340,9 +340,9 @@ class Product extends Controller implements EventBindInterface
 		}
 	}
 
-	public function deleteAction($id): ?bool
+	public function deleteAction(int $id): ?bool
 	{
-		$r = $this->checkPermissionIBlockElementDelete($id);
+		$r = $this->checkPermissionDelete($id);
 		if($r->isSuccess())
 		{
 			$r = $this->exists($id);
@@ -692,8 +692,10 @@ class Product extends Controller implements EventBindInterface
 	}
 
 	/**
-	 * @param array $result
+	 * @param array &$result
 	 * @param int $iblockId
+	 * @param array $propertyIds
+	 * @return void
 	 */
 	protected function attachPropertyValues(array &$result, int $iblockId, array $propertyIds = []): void
 	{
@@ -702,7 +704,7 @@ class Product extends Controller implements EventBindInterface
 			return;
 		}
 
-		$propertyFilter = count($propertyIds)>0 ? ['ID' => $propertyIds] : [];
+		$propertyFilter = !empty($propertyIds) ? ['ID' => $propertyIds] : [];
 
 		$propertyValues = [];
 		\CIBlockElement::getPropertyValuesArray(
@@ -774,7 +776,7 @@ class Product extends Controller implements EventBindInterface
 					$result[$k]['PROPERTY_' . $propId] = $value;
 				}
 			}
-			else if(count($propertyIds)>0)
+			elseif (!empty($propertyIds))
 			{
 				/**
 				 * if property values are empty $propertyValues is empty
@@ -811,7 +813,7 @@ class Product extends Controller implements EventBindInterface
 	 */
 	protected function getAllowedFieldsProduct(): array
 	{
-		return [
+		$result = [
 			'TYPE',
 			'AVAILABLE',
 			'BUNDLE',
@@ -822,8 +824,6 @@ class Product extends Controller implements EventBindInterface
 			'SUBSCRIBE',
 			'VAT_ID',
 			'VAT_INCLUDED',
-			'PURCHASING_PRICE',
-			'PURCHASING_CURRENCY',
 			'BARCODE_MULTI',
 			'WEIGHT',
 			'LENGTH',
@@ -839,6 +839,13 @@ class Product extends Controller implements EventBindInterface
 			'SUBSCRIBE_RAW',
 			'CAN_BUY_ZERO_RAW'
 		];
+
+		if ($this->accessController->check(ActionDictionary::ACTION_PRODUCT_PURCHASE_INFO_VIEW))
+		{
+			array_push($result, 'PURCHASING_PRICE', 'PURCHASING_CURRENCY');
+		}
+
+		return $result;
 	}
 
 	protected function checkFieldsDownload($fields)
@@ -921,13 +928,66 @@ class Product extends Controller implements EventBindInterface
 	//endregion checkPermissionController
 
 	//region checkPermissionIBlock
-	protected function checkPermissionIBlockElementAdd($iblockId)
+	protected function checkPermissionAdd(int $iblockId): Result
+	{
+		$result = new Result();
+
+		$result->addErrors(
+			$this->checkPermissionIBlockElementAdd($iblockId)->getErrors()
+		);
+		$result->addErrors(
+			$this->checkPermissionCatalogProductAdd()->getErrors()
+		);
+
+		return $result;
+	}
+
+	protected function checkPermissionCatalogProductAdd(): Result
+	{
+		$result = new Result();
+
+		if (!$this->accessController->check(ActionDictionary::ACTION_PRODUCT_ADD))
+		{
+			$result->addError(new Error('Access Denied', 200040300040));
+		}
+
+		return $result;
+	}
+
+	protected function checkPermissionIBlockElementAdd(int $iblockId): Result
 	{
 		//return $this->checkPermissionIBlockElementList($iblockId);
 		return $this->checkPermissionIBlockElementModify($iblockId, 0);
 	}
 
-	protected function checkPermissionIBlockElementUpdate($elementId)
+	protected function checkPermissionUpdate(int $elementId): Result
+	{
+		$result = new Result();
+
+		$result->addErrors(
+			$this->checkPermissionIBlockElementUpdate($elementId)->getErrors()
+		);
+		$result->addErrors(
+			$this->checkPermissionCatalogProductUpdate($elementId)->getErrors()
+		);
+
+		return $result;
+	}
+
+	protected function checkPermissionCatalogProductUpdate(int $elementId): Result
+	{
+		$result = new Result();
+
+		if (!$this->accessController->check(ActionDictionary::ACTION_PRODUCT_EDIT))
+		{
+			$result->addError(new Error('Access Denied', 200040300040));
+		}
+
+		return $result;
+	}
+
+
+	protected function checkPermissionIBlockElementUpdate(int $elementId)
 	{
 		$iblockId = \CIBlockElement::GetIBlockByID($elementId);
 		return $this->checkPermissionIBlockElementModify($iblockId, $elementId);
@@ -978,7 +1038,33 @@ class Product extends Controller implements EventBindInterface
 		return $r;
 	}
 
-	protected function checkPermissionIBlockElementDelete($elementId)
+	protected function checkPermissionDelete(int $elementId): Result
+	{
+		$result = new Result();
+
+		$result->addErrors(
+			$this->checkPermissionIBlockElementDelete($elementId)->getErrors()
+		);
+		$result->addErrors(
+			$this->checkPermissionCatalogProductDelete($elementId)->getErrors()
+		);
+
+		return $result;
+	}
+
+	protected function checkPermissionCatalogProductDelete(int $elementId): Result
+	{
+		$result = new Result();
+
+		if (!$this->accessController->check(ActionDictionary::ACTION_PRODUCT_DELETE))
+		{
+			$result->addError(new Error('Access Denied', 200040300040));
+		}
+
+		return $result;
+	}
+
+	protected function checkPermissionIBlockElementDelete(int $elementId): Result
 	{
 		$r = new Result();
 
