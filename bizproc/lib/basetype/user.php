@@ -286,7 +286,8 @@ HTML;
 	{
 		static::cleanErrors();
 		$result = static::extractValue($fieldType, $field, $request);
-		return is_array($result)? $result[0] : $result;
+
+		return is_array($result)? array_shift($result) : $result;
 	}
 
 	/**

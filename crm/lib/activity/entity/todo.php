@@ -31,8 +31,21 @@ class ToDo
 
 	protected ?array $storageElementIds = null;
 
-	public static function createWithDefaultDescription(int $entityTypeId, int $id, DateTime $deadline): Result
+	public static function createWithDefaultDescription(
+		int $entityTypeId,
+		int $id,
+		DateTime $deadline,
+		bool $ceilDeadlineTime = true
+	): Result
 	{
+		if ($ceilDeadlineTime)
+		{
+			$deadline
+				->setTime($deadline->format('H'), 0)
+				->add('PT1H')
+			;
+		}
+
 		$itemIdentifier = new ItemIdentifier($entityTypeId, $id);
 		return (new self($itemIdentifier))
 			->setDefaultDescription()

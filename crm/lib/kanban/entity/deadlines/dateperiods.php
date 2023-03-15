@@ -124,7 +124,7 @@ class DatePeriods
 		switch ($stage)
 		{
 			case DeadlinesStageManager::STAGE_TODAY:
-				$result =  $this->datetimeStages->today($this->userCurrentDateTime);
+				$result = $this->datetimeStages->today($this->userCurrentDateTime);
 				break;
 			case DeadlinesStageManager::STAGE_THIS_WEEK:
 				$result = $this->datetimeStages->thisWeek($this->userCurrentDateTime);
