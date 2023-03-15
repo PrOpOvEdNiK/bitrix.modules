@@ -1,13 +1,14 @@
 <?php
 
-namespace Bitrix\Crm\Service\Timeline\Item\ProductCompilation;
+namespace Bitrix\Crm\Service\Timeline\Item;
 
-use Bitrix\Crm\Service\Timeline\Item\Configurable;
 use Bitrix\Crm\Service\Timeline\Item\DealProductList\ExpandableListFactory;
 use Bitrix\Crm\Service\Timeline\Layout;
 use Bitrix\Main\Localization\Loc;
 
-class SentToClient extends Configurable
+Loc::loadMessages(__DIR__ . '/Ecommerce.php');
+
+class ProductCompilationSentToCustomer extends Configurable
 {
 	/**
 	 * @inheritDoc
@@ -22,7 +23,7 @@ class SentToClient extends Configurable
 	 */
 	public function getTitle(): ?string
 	{
-		return Loc::getMessage('CRM_TIMELINE_PRODUCT_COMPILATION_TITLE');
+		return Loc::getMessage('CRM_TIMELINE_ECOMMERCE_PRODUCT_SELECTION_SENT_TO_CUSTOMER');
 	}
 
 	/**

@@ -374,11 +374,12 @@ abstract class Factory
 		$itemIds = [];
 
 		$fmIndex = array_search(Item::FIELD_NAME_FM, $parameters['select'] ?? [], true);
-		$isFmInSelect = $fmIndex !== false;
-		if ($isFmInSelect)
+		if ($fmIndex !== false)
 		{
 			unset($parameters['select'][$fmIndex]);
 		}
+
+		$isFmInSelect = $fmIndex !== false || in_array('*', $parameters['select'] ?? [], true);
 
 		$parameters = $this->prepareGetListParameters($parameters);
 
@@ -500,7 +501,7 @@ abstract class Factory
 	public function getItem(int $id): ?Item
 	{
 		$parameters = [
-			'select' => $this->getSelectForGetItem(),
+			'select' => ['*'],
 			'filter' => ['=ID' => $id],
 			// Do not set limit here! 'limit' limits number of DB rows, not items.
 			// If sql contains joins, there are multiple rows for each item. Some data will not be fetched
@@ -510,26 +511,6 @@ abstract class Factory
 		$items = $this->getItems($parameters);
 
 		return array_shift($items);
-	}
-
-	protected function getSelectForGetItem(): array
-	{
-		$select = ['*'];
-
-		if ($this->isFieldExists(Item::FIELD_NAME_CONTACTS))
-		{
-			$select[] = Item::FIELD_NAME_CONTACTS;
-		}
-		if ($this->isFieldExists(Item::FIELD_NAME_PRODUCTS))
-		{
-			$select[] = Item::FIELD_NAME_PRODUCTS;
-		}
-		if ($this->isFieldExists(Item::FIELD_NAME_OBSERVERS))
-		{
-			$select[] = Item::FIELD_NAME_OBSERVERS;
-		}
-
-		return $select;
 	}
 
 	/**
@@ -611,6 +592,19 @@ abstract class Factory
 		{
 			$select[] = 'UF_*';
 			$select[] = 'PARENT_ID_*';
+
+			if ($this->isFieldExists(Item::FIELD_NAME_CONTACTS))
+			{
+				$select[] = Item::FIELD_NAME_CONTACTS;
+			}
+			if ($this->isFieldExists(Item::FIELD_NAME_PRODUCTS))
+			{
+				$select[] = Item::FIELD_NAME_PRODUCTS;
+			}
+			if ($this->isFieldExists(Item::FIELD_NAME_OBSERVERS))
+			{
+				$select[] = Item::FIELD_NAME_OBSERVERS;
+			}
 		}
 
 		$selectWithoutContacts = array_diff($select, [Item::FIELD_NAME_CONTACTS, Item::FIELD_NAME_CONTACT_IDS]);
@@ -1413,7 +1407,7 @@ abstract class Factory
 					'SORT' => 'ASC',
 				],
 				'filter' => $filter,
-				'cache' => static::STAGES_CACHE_TTL,
+				'cache' => ['ttl' => static::STAGES_CACHE_TTL],
 			])->fetchCollection();
 			foreach($this->stageCollections[$categoryId] as $stage)
 			{

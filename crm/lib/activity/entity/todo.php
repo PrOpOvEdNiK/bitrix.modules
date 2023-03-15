@@ -2,6 +2,7 @@
 
 namespace Bitrix\Crm\Activity\Entity;
 
+use Bitrix\Crm\Activity\Provider;
 use Bitrix\Crm\Integration\StorageType;
 use Bitrix\Crm\ItemIdentifier;
 use Bitrix\Crm\Service\Container;
@@ -62,15 +63,54 @@ class ToDo
 
 	public static function load(ItemIdentifier $owner, int $id): ?self
 	{
-		$data = CCrmActivity::GetList(
-			[],
+		$filter = [
+			'BINDINGS' => [
 				[
-					'BINDINGS' => [
-						'OWNER_TYPE_ID' => $owner->getEntityTypeId(),
-						'OWNER_ID' => $owner->getEntityId(),
-					],
-					'ID' => $id
+					'OWNER_TYPE_ID' => $owner->getEntityTypeId(),
+					'OWNER_ID' => $owner->getEntityId(),
+				]
 			],
+			'=ID' => $id
+		];
+
+		return self::getInstanceByParams($owner, $filter);
+	}
+	public static function loadNearest(ItemIdentifier $owner): ?self
+	{
+		$filter = [
+			'=COMPLETED' => 'N',
+			'=PROVIDER_ID' => Provider\ToDo::PROVIDER_ID,
+			'=PROVIDER_TYPE_ID' => Provider\ToDo::PROVIDER_TYPE_ID_DEFAULT,
+			'BINDINGS' => [
+				[
+					'OWNER_TYPE_ID' => $owner->getEntityTypeId(),
+					'OWNER_ID' => $owner->getEntityId(),
+				],
+			],
+		];
+
+		$order = [
+			'DEADLINE' => 'ASC',
+		];
+
+		$options = [
+			'QUERY_OPTIONS' => [
+				'LIMIT' => 1,
+			],
+		];
+
+		return self::getInstanceByParams($owner, $filter, $order, $options);
+	}
+	protected static function getInstanceByParams(
+		ItemIdentifier $owner,
+		array $filter,
+		array $order = [],
+		array $options = []
+	): ?ToDo
+	{
+		$data = CCrmActivity::GetList(
+			$order,
+			$filter,
 			false,
 			false,
 			[
@@ -82,33 +122,33 @@ class ToDo
 				'ASSOCIATED_ENTITY_ID',
 				'AUTOCOMPLETE_RULE',
 				'STORAGE_ELEMENT_IDS',
-			]
+			],
+			$options
 		)->Fetch();
 
-		if ($data)
+		if (!$data)
 		{
-			$todo = new self($owner);
-			$todo
-				->setId((int)$data['ID'])
-				->setDeadline(
-					($data['DEADLINE'] && !\CCrmDateTimeHelper::IsMaxDatabaseDate($data['DEADLINE']))
-						? DateTime::createFromUserTime($data['DEADLINE'])
-						: null
-				)
-				->setDescription($data['DESCRIPTION'])
-				->setResponsibleId($data['RESPONSIBLE_ID'])
-				->setParentActivityId($data['ASSOCIATED_ENTITY_ID'] ?: null)
-				->setAutocompleteRule($data['AUTOCOMPLETE_RULE'] ?: null)
-				->setCompleted($data['COMPLETED'])
-				->setStorageElementIds($data['STORAGE_ELEMENT_IDS'] ?: null)
-			;
-
-			return $todo;
+			return null;
 		}
 
-		return null;
-	}
+		$todo = new self($owner);
+		$todo
+			->setId((int)$data['ID'])
+			->setDeadline(
+				($data['DEADLINE'] && !\CCrmDateTimeHelper::IsMaxDatabaseDate($data['DEADLINE']))
+					? DateTime::createFromUserTime($data['DEADLINE'])
+					: null
+			)
+			->setDescription($data['DESCRIPTION'])
+			->setResponsibleId($data['RESPONSIBLE_ID'])
+			->setParentActivityId($data['ASSOCIATED_ENTITY_ID'] ?: null)
+			->setAutocompleteRule($data['AUTOCOMPLETE_RULE'] ?: null)
+			->setCompleted($data['COMPLETED'])
+			->setStorageElementIds($data['STORAGE_ELEMENT_IDS'] ?: null)
+		;
 
+		return $todo;
+	}
 	public static function getDescriptionForEntityType(int $entityTypeId): string
 	{
 		$defaultDescription = Loc::getMessage('CRM_TODO_ENTITY_ACTIVITY_DESCRIPTION_CONTACT_CLIENT') ?? '';

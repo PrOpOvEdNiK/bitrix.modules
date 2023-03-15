@@ -238,13 +238,11 @@ final class Document extends Configurable
 			(new Layout\Action\JsEvent('Document:Print'))
 		;
 
-		$documentData = $this->getDocument()->getFile(false)->getData();
-		$printUrl = $documentData['printUrl'] ?? null;
-		$pdfUrl = $documentData['pdfUrl'] ?? null;
+		$printUrl = $this->getPrintUrl();
 		if ($printUrl)
 		{
 			$action->addActionParamString('printUrl', (string)$printUrl);
-			$action->addActionParamString('pdfUrl', (string)$pdfUrl);
+			$action->addActionParamString('pdfUrl', (string)$this->getPdfUrl());
 		}
 		else
 		{
@@ -266,6 +264,28 @@ final class Document extends Configurable
 	public function getMenuItems(): ?array
 	{
 		$menuItems = parent::getMenuItems();
+
+		$downloadPdfAction = (new Layout\Action\JsEvent('Document:DownloadPdf'));
+		$pdfUrl = $this->getPdfUrl();
+		if ($pdfUrl)
+		{
+			$downloadPdfAction->addActionParamString('pdfUrl', (string)$pdfUrl);
+		}
+
+		$menuItems['downloadPdf'] =
+			(new MenuItem(Loc::getMessage('CRM_COMMON_ACTION_DOWNLOAD_FORMAT', ['#FORMAT#' => 'PDF'])))
+				->setAction($downloadPdfAction)
+				->setScopeWeb()
+		;
+
+		$menuItems['downloadDocx'] =
+			(new MenuItem(Loc::getMessage('CRM_COMMON_ACTION_DOWNLOAD_FORMAT', ['#FORMAT#' => 'DOCX'])))
+				->setAction(
+					(new Layout\Action\JsEvent('Document:DownloadDocx'))
+						->addActionParamString('docxUrl', (string)$this->getDownloadUrl())
+				)
+				->setScopeWeb()
+		;
 
 		$menuItems['delete'] = MenuItemFactory::createDeleteMenuItem()
 			->setAction(

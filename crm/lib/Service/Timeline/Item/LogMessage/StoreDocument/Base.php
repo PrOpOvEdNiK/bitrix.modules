@@ -32,7 +32,7 @@ abstract class Base extends LogMessage
 		}
 
 		return [
-			'content' => ContentBlockFactory::createFromTemplate(
+			'content' => ContentBlockFactory::createLineOfTextFromTemplate(
 				$this->getHistoryItemModel()->get('TITLE_TEMPLATE'),
 				[
 					'#TITLE#' => $titleBlock,
