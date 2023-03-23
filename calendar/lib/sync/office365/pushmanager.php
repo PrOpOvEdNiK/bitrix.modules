@@ -120,17 +120,32 @@ class PushManager extends AbstractManager implements PushManagerInterface
 	 * @return Result
 	 *
 	 * @throws ApiException
+	 * @throws ArgumentException
+	 * @throws ArgumentNullException
+	 * @throws AuthException
+	 * @throws BaseException
+	 * @throws ConflictException
+	 * @throws LoaderException
+	 * @throws NotFoundException
+	 * @throws RemoteAccountException
 	 */
 	public function deletePush(Push $pushChannel): Result
 	{
 		$result = new Result();
 
-		if ($data = $this->context->getVendorSyncService()->unsubscribe($pushChannel->getResourceId()))
+		try
 		{
-			$result->setData($data);
-		}
+			if ($data = $this->context->getVendorSyncService()->unsubscribe($pushChannel->getResourceId()))
+			{
+				$result->setData($data);
+			}
 
-		return $result;
+			return $result;
+		}
+		catch (RemoteAccountException|AuthException $exception)
+		{
+			return $result;
+		}
 	}
 
 	/**
