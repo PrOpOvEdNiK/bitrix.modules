@@ -304,7 +304,7 @@ final class GoogleApiSync
 			$response = $this->syncTransport->getCalendarList($this->getCalendarListParams($syncToken));
 		}
 
-		if (!empty($response['items']))
+		if ($response && !empty($response['items']))
 		{
 			foreach($response['items'] as $calendarItem)
 			{

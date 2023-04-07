@@ -1315,6 +1315,7 @@ class VendorDataExchangeManager
 				{
 					if (
 						$existsSyncEvent->hasInstances()
+						&& $instanceSyncEvent->getEvent()->getOriginalDateFrom()
 						&& $existsInstanceSyncEvent = $existsSyncEvent->getInstanceMap()->getItem(
 							Sync\Entities\InstanceMap::getKeyByDate(
 								$instanceSyncEvent->getEvent()->getOriginalDateFrom()
@@ -1344,6 +1345,7 @@ class VendorDataExchangeManager
 		{
 			if (
 				$existsMasterSyncEvent->hasInstances()
+				&& $syncEvent->getEvent()->getOriginalDateFrom()
 				&& $existsInstanceSyncEvent = $existsMasterSyncEvent->getInstanceMap()->getItem(
 					Sync\Entities\InstanceMap::getKeyByDate(
 						$syncEvent->getEvent()->getOriginalDateFrom()

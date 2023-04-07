@@ -54,11 +54,13 @@ class PushManager extends AbstractManager implements PushManagerInterface
 					'RESOURCE_ID' => $data['id'],
 					'EXPIRES'     => $this->convertToDateTime($data['expirationDateTime']),
 				]);
-			} else
+			}
+			else
 			{
 				$result->addError(new Error('Error of renew push channel'));
 			}
-		} catch (ApiException $e)
+		}
+		catch (ApiException $e)
 		{
 			$result->addError(new Error('Error of MS Graph API', $e->getCode(), $e->getMessage()));
 		}
@@ -106,9 +108,13 @@ class PushManager extends AbstractManager implements PushManagerInterface
 				$result->addError(new Error('Error of create subscription.'));
 			}
 		}
-		catch(ApiException $e)
+		catch (ApiException $e)
 		{
 			$result->addError(new Error('Error of Push subscribing. Vendor returned error.', $e->getCode()));
+		}
+		catch (AuthException $e)
+		{
+			return $result;
 		}
 
 		return $result;

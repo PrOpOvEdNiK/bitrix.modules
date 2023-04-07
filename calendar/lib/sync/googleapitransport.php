@@ -293,7 +293,7 @@ final class GoogleApiTransport
 	 * @return array
 	 * @throws ArgumentException
 	 */
-	public function getCalendarList(array $requestParameters = null): array
+	public function getCalendarList(array $requestParameters = null): ?array
 	{
 		$this->currentMethod = __METHOD__;
 

@@ -4478,13 +4478,18 @@ function bxmail($to, $subject, $message, $additional_headers="", $additional_par
 	$event->send();
 
 	$defaultMailConfiguration = Configuration::getValue("smtp");
+	$smtpEnabled =
+		is_array($defaultMailConfiguration)
+		&& isset($defaultMailConfiguration['enabled'])
+		&& $defaultMailConfiguration['enabled'] === true
+	;
+
 	if (
-		$defaultMailConfiguration
-		&& $defaultMailConfiguration['enabled']
-		&& $context->getSmtp()
-		|| $defaultMailConfiguration['enabled']
-		&& $defaultMailConfiguration['host']
-		&& $defaultMailConfiguration['login']
+		$smtpEnabled
+		&& (
+			$context->getSmtp() !== null
+			|| (!empty($defaultMailConfiguration['host']) && !empty($defaultMailConfiguration['login']))
+		)
 	)
 	{
 		$mailer = Main\Mail\Smtp\Mailer::getInstance($context);

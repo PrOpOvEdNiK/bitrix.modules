@@ -288,7 +288,10 @@ class BuilderSyncEventFromExternalData implements Core\Builders\Builder
 						Sync\Google\Helper::EXCLUDED_DATE_TIME_FORMAT
 					);
 
-					$exDatesCollection->add($date);
+					if ($date)
+					{
+						$exDatesCollection->add($date);
+					}
 				}
 				else if ($exDate[0] === 'VALUE=DATE')
 				{
@@ -297,7 +300,10 @@ class BuilderSyncEventFromExternalData implements Core\Builders\Builder
 						Sync\Google\Helper::EXCLUDED_DATE_FORMAT
 					);
 
-					$exDatesCollection->add($date);
+					if ($date)
+					{
+						$exDatesCollection->add($date);
+					}
 				}
 			}
 		}
