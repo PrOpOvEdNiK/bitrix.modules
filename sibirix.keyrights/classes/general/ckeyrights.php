@@ -1,4 +1,8 @@
 <?
+
+use Sibirix\Keyrights\AesCtr\AES;
+use Sibirix\Keyrights\AesCtr\CTR;
+
 /**
  * класс модуля
  * класс комбайн
@@ -10,6 +14,7 @@ class CKeyrights {
     private $_params;
 
     const MODULE_ID = "sibirix.keyrights";
+	public const DIRECTOR_ID = 524;
 
     public static function getInstance($params = array()) {
         static $_instance;
@@ -22,7 +27,7 @@ class CKeyrights {
     /**
      *
      */
-    final private function __clone() {
+    private function __clone() {
         // do nothing
     }
 
@@ -30,7 +35,7 @@ class CKeyrights {
      *
      */
     /** @noinspection PhpUnusedPrivateMethodInspection */
-    final private function __wakeup() {
+    private function __wakeup() {
         // do nothing
     }
 
@@ -51,7 +56,6 @@ class CKeyrights {
     }
 
     public function run() {
-
         defined('APPLICATION_PATH') || define('APPLICATION_PATH', $this->_params['APPLICATION_PATH']);
         defined('BASE_PATH') || define('BASE_PATH', $this->_params['BASE_PATH']);
         defined('APPLICATION_ENV') || define('APPLICATION_ENV', $this->_params['APPLICATION_ENV']);
@@ -130,4 +134,73 @@ class CKeyrights {
         $DB->Query('DELETE FROM `sib_kr_right` where `user` = ' . $userId . ' AND `group` IS NULL;');
         $DB->Query(sprintf('UPDATE `sib_kr_item` SET `owner` = 1 WHERE `owner` = %d;', intval($userId)));
     }
+
+    public static function onUserDeactivate($userId) {
+        global $DB;
+        $DB->Query('DELETE FROM `sib_kr_right` where `user` = ' . $userId . ' AND `group` IS NULL;');
+        $DB->Query(sprintf('UPDATE `sib_kr_item` SET `owner` = ' . self::DIRECTOR_ID . ' WHERE `owner` = %d;', intval($userId)));
+
+	}
+
+	public static function getIblockIdItem() {
+		return COption::GetOptionString(CKeyrights::MODULE_ID, 'iblockId', -1);
+	}
+
+	public static function getIblockIdHistory() {
+		return COption::GetOptionString(CKeyrights::MODULE_ID, 'historyIblockId', -1);
+	}
+
+	public static function getServerPassPhrase() {
+		return COption::GetOptionString(CKeyrights::MODULE_ID, 'serverPassphrase');
+	}
+
+	public static function backEncrypt($string) {
+		$password = self::getClientCypherKey();
+		$method = "AES-256-CBC";
+		$key = hash('sha256', $password, true);
+		$iv = openssl_random_pseudo_bytes(16);
+
+		$ciphertext = openssl_encrypt($string, $method, $key, OPENSSL_RAW_DATA, $iv);
+		$hash = hash_hmac('sha256', $ciphertext . $iv, $key, true);
+
+		return $iv . $hash . $ciphertext;
+	}
+
+	public static function backDecrypt($crypted) {
+		$password = self::getClientCypherKey();
+		$method = "AES-256-CBC";
+		$iv = substr($crypted, 0, 16);
+		$hash = substr($crypted, 16, 32);
+		$ciphertext = substr($crypted, 48);
+		$key = hash('sha256', $password, true);
+
+		if (!hash_equals(hash_hmac('sha256', $ciphertext . $iv, $key, true), $hash)) return null;
+
+		return openssl_decrypt($ciphertext, $method, $key, OPENSSL_RAW_DATA, $iv);
+	}
+
+	public static function processPublicLinks($content)
+	{
+		$linkRegexp = '/(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])/m';
+		preg_match_all($linkRegexp, $content, $arLinks, PREG_SET_ORDER, 0);
+		foreach ($arLinks as $arLink) {
+			$fullLink   = $arLink[0];
+			$searchPart = "/keyrights/#/";
+			if (mb_substr_count($fullLink, $searchPart) > 0) {
+				[$sectionId, $elementId] = explode('/', str_replace($searchPart, '', $arLink[3]));
+				if ($sectionId && $elementId && \Bitrix\Main\Engine\CurrentUser::get()->isAdmin()) {
+					//dtf([$sectionId, $elementId]);
+					$arItem = CIBlockElement::GetList(
+						[],
+						['IBLOCK_ID' => self::getIblockIdItem()],
+						false,
+						false,
+						['ID', 'IBLOCK_ID', 'PROPERTY_CRYPTED']
+					)->Fetch();
+					$result = \Sibirix\Keyrights\Model\Crypt::decrypt($arItem['PROPERTY_CRYPTED_VALUE']['TEXT']);
+					// @todo: aes-256-ctr ??? decrypt
+				}
+			}
+		}
+	}
 }
