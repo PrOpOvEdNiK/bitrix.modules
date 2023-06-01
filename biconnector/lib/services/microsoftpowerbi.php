@@ -54,14 +54,14 @@ class MicrosoftPowerBI extends Service
 				}
 
 				$result[] = [
-					'CONCEPT_TYPE' => ($fieldInfo['IS_METRIC'] === 'Y' ? 'METRIC' : 'DIMENSION'),
+					'CONCEPT_TYPE' => (isset($fieldInfo['IS_METRIC']) && $fieldInfo['IS_METRIC'] === 'Y' ? 'METRIC' : 'DIMENSION'),
 					'ID' => $fieldName,
 					'NAME' => $fieldInfo['FIELD_DESCRIPTION'],
-					'DESCRIPTION' => $fieldInfo['FIELD_DESCRIPTION_FULL'],
+					'DESCRIPTION' => $fieldInfo['FIELD_DESCRIPTION_FULL'] ?? '',
 					'TYPE' => $this->mapType($type),
-					'IS_PRIMARY' => $fieldInfo['IS_PRIMARY'] ?: null,
-					'CONCAT_GROUP_BY' => $fieldInfo['CONCAT_GROUP_BY'] ?: null,
-					'CONCAT_KEY' => $fieldInfo['CONCAT_KEY'] ?: null,
+					'IS_PRIMARY' => $fieldInfo['IS_PRIMARY'] ?? null,
+					'CONCAT_GROUP_BY' => $fieldInfo['CONCAT_GROUP_BY'] ?? null,
+					'CONCAT_KEY' => $fieldInfo['CONCAT_KEY'] ?? null,
 				];
 			}
 		}
@@ -95,7 +95,7 @@ class MicrosoftPowerBI extends Service
 
 	protected function applyDateFilter(&$sqlWhere, $tableFields, $dateRange, $timeFilterColumn = '')
 	{
-		$startDate = MakeTimeStamp($dateRange['startDate'], 'YYYY-MM-DD');
+		$startDate = array_key_exists('startDate', $dateRange) ? MakeTimeStamp($dateRange['startDate'], 'YYYY-MM-DD') : false;
 
 		$filterColumnName = false;
 		if (
@@ -125,7 +125,7 @@ class MicrosoftPowerBI extends Service
 				$sqlWhere['>=' . $filterColumnName] = ConvertTimeStamp($startDate, 'SHORT');
 			}
 
-			$endDate = MakeTimeStamp($dateRange['endDate'], 'YYYY-MM-DD');
+			$endDate = array_key_exists('endDate', $dateRange) ? MakeTimeStamp($dateRange['endDate'], 'YYYY-MM-DD') : false;
 			if ($endDate)
 			{
 				$endDate += 23 * 3600 + 59 * 60 + 59;
@@ -224,11 +224,12 @@ class MicrosoftPowerBI extends Service
 		$tableFields = $tableInfo['FIELDS'];
 
 		$canBeFiltered = true;
-		$sqlWhere = $tableInfo['FILTER'] ?: [];
+		$sqlWhere = $tableInfo['FILTER'] ?? [];
 
 		if (isset($parameters['dateRange']) && is_array($parameters['dateRange']))
 		{
-			$this->applyDateFilter($sqlWhere, $tableFields, $parameters['dateRange'], $parameters['configParams']['timeFilterColumn']);
+			$timeFilterColumn = isset($parameters['configParams']) && is_array($parameters['configParams']) && array_key_exists('timeFilterColumn', $parameters['configParams']) ? $parameters['configParams']['timeFilterColumn'] : '';
+			$this->applyDateFilter($sqlWhere, $tableFields, $parameters['dateRange'], $timeFilterColumn);
 		}
 
 		// https://developers.google.com/datastudio/connector/filters?hl=ru
@@ -239,17 +240,19 @@ class MicrosoftPowerBI extends Service
 
 		$queryWhere = new \CBIConnectorSqlBuilder;
 		$queryWhere->setFields($tableFields);
-		if ($tableInfo['FILTER_FIELDS'])
+		if (isset($tableInfo['FILTER_FIELDS']))
 		{
 			$queryWhere->addFields($tableInfo['FILTER_FIELDS']);
 		}
 
+		$strQueryWhere = '';
 		if ($canBeFiltered && $sqlWhere)
 		{
 			$strQueryWhere = $queryWhere->getQuery($sqlWhere);
 		}
 
 		$selectedFields = [];
+		$concatFields = [];
 		if (isset($parameters['fields']) && is_array($parameters['fields']))
 		{
 			foreach ($parameters['fields'] as $field)
@@ -257,14 +260,17 @@ class MicrosoftPowerBI extends Service
 				$fieldName = trim($field['name'], " \t\n\r");
 				if ($fieldName && isset($tableFields[$fieldName]))
 				{
+					$tableField = $tableFields[$fieldName];
 					if (
 						(!isset($field['forFilterOnly']) || !$field['forFilterOnly'])
 						|| !($strQueryWhere && $canBeFiltered)
 					)
 					{
-						if ($tableFields[$fieldName]['CONCAT_KEY'])
+						if (isset($tableField['CONCAT_KEY']))
 						{
-							$selectedFields[$tableFields[$fieldName]['CONCAT_KEY']] = $tableFields[$tableFields[$fieldName]['CONCAT_KEY']];
+							$concatKey = $tableField['CONCAT_KEY'];
+							$concatFields[$concatKey] = $tableFields[$concatKey];
+							$concatFields[$concatKey]['ID'] = $concatKey;
 						}
 						$selectedFields[$fieldName] = $tableFields[$fieldName];
 					}
@@ -276,7 +282,9 @@ class MicrosoftPowerBI extends Service
 			}
 			if (!$selectedFields)
 			{
-				//TODO
+				return [
+					'error' => 'EMPTY_SELECT_FIELDS_LIST',
+				];
 			}
 		}
 		else
@@ -284,7 +292,38 @@ class MicrosoftPowerBI extends Service
 			$selectedFields = $tableFields;
 		}
 
-		$queryWhere->setSelect($selectedFields, static::$dateFormats);
+		$primaryFields = [];
+		if ($concatFields)
+		{
+			foreach ($tableFields as $fieldName => $tableField)
+			{
+				if (isset($tableField['IS_PRIMARY']) && $tableField['IS_PRIMARY'] == 'Y')
+				{
+					$tableField['ID'] = $fieldName;
+					$primaryFields[$fieldName] = $tableField;
+				}
+			}
+		}
+
+		foreach ($concatFields as $concatKey => $tmp)
+		{
+			if (isset($selectedFields[$concatKey]))
+			{
+				unset($concatFields[$concatKey]);
+			}
+		}
+
+		foreach ($primaryFields as $primaryKey => $tmp)
+		{
+			if (isset($selectedFields[$primaryKey]))
+			{
+				unset($primaryFields[$primaryKey]);
+			}
+		}
+
+		$shadowFields = array_merge($primaryFields, $concatFields);
+
+		$queryWhere->setSelect(array_merge($selectedFields, $shadowFields), static::$dateFormats);
 
 		$additionalJoins = $queryWhere->getJoins();
 		$sql = "select\n  " . $queryWhere->getSelect()
@@ -295,7 +334,7 @@ class MicrosoftPowerBI extends Service
 
 		$i = 0;
 		$fetchCallbacks = [];
-		foreach ($selectedFields as $fieldName => $fieldInfo)
+		foreach (array_merge($selectedFields, $shadowFields) as $fieldInfo)
 		{
 			if (isset($fieldInfo['CALLBACK']))
 			{
@@ -330,6 +369,7 @@ class MicrosoftPowerBI extends Service
 			'filtersApplied' => $strQueryWhere && $canBeFiltered,
 			'onAfterFetch' => $fetchCallbacks,
 			'where' => $sqlWhere,
+			'shadowFields' => $shadowFields,
 		];
 	}
 }

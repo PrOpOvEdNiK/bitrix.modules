@@ -11,7 +11,6 @@ use Bitrix\Disk\File;
 use Bitrix\Disk\Folder;
 use Bitrix\Disk\Integration\Bitrix24Manager;
 use Bitrix\Disk\Internals\ObjectTable;
-use Bitrix\Disk\ProxyType;
 use Bitrix\Disk\Internals\Controller;
 use Bitrix\Disk\Internals\Error\Error;
 use Bitrix\Disk\Storage;
@@ -26,7 +25,6 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ObjectNotFoundException;
 use Bitrix\Main\SystemException;
 use CAdminException;
-use CDiskQuota;
 use CExtranet;
 use COption;
 use CSite;
@@ -265,7 +263,7 @@ class StorageController extends Controller
 	{
 		if(!$this->request->getCookie(self::COOKIE_DISK_USAGE))
 		{
-			list($y, $m, $d) = explode('-', date('Y-m-d'));
+			[$y, $m, $d] = explode('-', date('Y-m-d'));
 
 			//end of current day;
 			$this->getApplication()->set_cookie(self::COOKIE_DISK_USAGE, 'Y', mktime(0, 0, 0, $m, $d + 1, $y));
@@ -296,7 +294,7 @@ class StorageController extends Controller
 		{
 			$this->sendJsonErrorResponse();
 		}
-		list($startRange, $endRange, $fileSize) = $this->getContentRange();
+		[$startRange, $endRange, $fileSize] = $this->getContentRange();
 
 		$tmpFileManager = new Bitrix24Disk\UploadFileManager();
 		$tmpFileManager

@@ -922,11 +922,15 @@ abstract class Element extends Base
 
 				if ($this->arParams['SET_TITLE'] || isset($arResult[$this->arParams['BROWSER_TITLE']]))
 				{
-					$this->storage['TITLE_OPTIONS'] = array(
-						'ADMIN_EDIT_LINK' => $buttons['submenu']['edit_element']['ACTION'],
-						'PUBLIC_EDIT_LINK' => $buttons['edit']['edit_element']['ACTION'],
-						'COMPONENT_NAME' => $this->getName(),
-					);
+					$this->storage['TITLE_OPTIONS'] = null;
+					if (isset($buttons['submenu']['edit_element']))
+					{
+						$this->storage['TITLE_OPTIONS'] = [
+							'ADMIN_EDIT_LINK' => $buttons['submenu']['edit_element']['ACTION'],
+							'PUBLIC_EDIT_LINK' => $buttons['edit']['edit_element']['ACTION'],
+							'COMPONENT_NAME' => $this->getName(),
+						];
+					}
 				}
 			}
 		}
@@ -1406,7 +1410,7 @@ abstract class Element extends Base
 			$oneRow = [
 				'ID' => $offer['ID'],
 				'CODE' => $offer['CODE'],
-				'NAME' => $offer['~NAME'],
+				'NAME' => $offer['~NAME'] ?? $item['~NAME'],
 				'TREE' => $offer['TREE'],
 				'DISPLAY_PROPERTIES' => $skuProps,
 				'PREVIEW_TEXT' => $offerText ? $offer['PREVIEW_TEXT'] : '',
@@ -1507,6 +1511,7 @@ abstract class Element extends Base
 		$this->editTemplateProductSlider($item, $item['IBLOCK_ID'], 0, $this->arParams['ADD_DETAIL_TO_SLIDER'] === 'Y', array($this->arResult['DEFAULT_PICTURE']));
 		$this->editTemplateCatalogInfo($item);
 
+		$item['SHOW_OFFERS_PROPS'] = false;
 		if ($item['CATALOG'] && !empty($item['OFFERS']))
 		{
 			$needValues = array();
@@ -1544,10 +1549,16 @@ abstract class Element extends Base
 
 		if ($item['MODULES']['catalog'] && $item['CATALOG'])
 		{
-			if ($item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT || $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET)
+			if (
+				$item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+				|| $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET
+			)
 			{
-				\CIBlockPriceTools::setRatioMinPrice($item, false);
-				$item['MIN_BASIS_PRICE'] = $item['MIN_PRICE'];
+				if (isset($item['MIN_PRICE']))
+				{
+					\CIBlockPriceTools::setRatioMinPrice($item, false);
+					$item['MIN_BASIS_PRICE'] = $item['MIN_PRICE'];
+				}
 			}
 
 			if (

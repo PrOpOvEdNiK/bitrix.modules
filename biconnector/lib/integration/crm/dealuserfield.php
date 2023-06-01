@@ -162,7 +162,7 @@ class DealUserField
 
 			if (isset($messages['CRM_BIC_DEAL_UF_FIELD_' . $fieldCode . '_FULL']))
 			{
-				$fieldInfo['FIELD_DESCRIPTION_FULL'] = $messages['CRM_BIC_DEAL_UF_FIELD_' . $fieldCode . '_FULL'];
+				$fieldInfo['FIELD_DESCRIPTION_FULL'] = $messages['CRM_BIC_DEAL_UF_FIELD_' . $fieldCode . '_FULL'] ?? '';
 			}
 		}
 		unset($fieldInfo);

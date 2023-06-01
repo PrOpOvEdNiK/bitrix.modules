@@ -1751,7 +1751,10 @@ abstract class Base extends \CBitrixComponent
 		while ($row = $iterator->Fetch())
 		{
 			$id = (int)$row['ID'];
-			$list[$id] = $row;
+			$list[$id] = [
+				'ID' => $row['ID'],
+				'IBLOCK_ID' => $row['IBLOCK_ID'],
+			];
 		}
 		unset($row);
 
@@ -1905,14 +1908,10 @@ abstract class Base extends \CBitrixComponent
 			);
 		}
 
-		if (!empty($order))
-		{
-			foreach (array_keys($order) as $field)
-				$select[] = mb_strtoupper($field);
-			unset($field);
-		}
 		if (!empty($select))
+		{
 			$select = array_unique($select);
+		}
 
 		return [
 			'SELECT' => $select,
@@ -2442,8 +2441,8 @@ abstract class Base extends \CBitrixComponent
 			$element['IBLOCK_SECTION_ID'],
 			array('SECTION_BUTTONS' => false, 'SESSID' => false, 'CATALOG' => true)
 		);
-		$element['EDIT_LINK'] = $buttons['edit']['edit_element']['ACTION_URL'];
-		$element['DELETE_LINK'] = $buttons['edit']['delete_element']['ACTION_URL'];
+		$element['EDIT_LINK'] = ($buttons['edit']['edit_element']['ACTION_URL'] ?? null);
+		$element['DELETE_LINK'] = ($buttons['edit']['delete_element']['ACTION_URL'] ?? null);
 	}
 
 	/**
@@ -2525,7 +2524,7 @@ abstract class Base extends \CBitrixComponent
 		));
 		while ($row = $iterator->fetch())
 		{
-			$ratio = (max((float)$row['RATIO'], (int)$row['RATIO']));
+			$ratio = max((float)$row['RATIO'], (int)$row['RATIO']);
 			if ($ratio > CATALOG_VALUE_EPSILON)
 			{
 				$row['RATIO'] = $ratio;
@@ -4695,6 +4694,7 @@ abstract class Base extends \CBitrixComponent
 				$emptyPreview = array(
 					'ID' => 0,
 					'SRC' => $emptyPreviewPath,
+					'FILE_NAME' => 'no_photo.png',
 					'WIDTH' => (int)$size[0],
 					'HEIGHT' => (int)$size[1]
 				);

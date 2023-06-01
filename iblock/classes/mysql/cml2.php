@@ -824,6 +824,82 @@ class CIBlockXMLFile
 		return $DB->Query("delete from ".$this->_table_name." where ID = ".(int)$ID);
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param int|null $lastIndex
+	 * @param int $interval
+	 * @return bool|int
+	 */
+	public static function safeUnZip(string $fileName, ?int $lastIndex = null, int $interval = 0)
+	{
+		$startTime = time();
+
+		$dirName = mb_substr($fileName, 0, mb_strrpos($fileName, '/') + 1);
+		if (mb_strlen($dirName) <= mb_strlen($_SERVER['DOCUMENT_ROOT']))
+		{
+			return false;
+		}
+
+		/** @var CZip $archiver */
+		$archiver = CBXArchive::GetArchive($fileName, 'ZIP');
+		if (!($archiver instanceof IBXArchive))
+		{
+			return false;
+		}
+
+		if ($lastIndex !== null && $lastIndex < 0)
+		{
+			$lastIndex = null;
+		}
+
+		$entries = (int)$archiver->GetProperties()['nb'];
+		for ($index = 0; $index < $entries; $index++)
+		{
+			if ($lastIndex !== null)
+			{
+				if ($lastIndex >= $index)
+				{
+					continue;
+				}
+			}
+
+			$archiver->SetOptions([
+				'RULE' => [
+					'by_index' => [
+						[
+							'start' => $index,
+							'end' => $index,
+						]
+					]
+				]
+			]);
+
+			$result = $archiver->Unpack($dirName);
+			if (!$result)
+			{
+				return false;
+			}
+
+			if ($interval > 0 && (time() - $startTime) > $interval)
+			{
+				return $index;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @deprecated deprecated since 23.0.0 - unsecure
+	 * @see CIBlockXMLFile::safeUnZip
+	 *
+	 * @param $file_name
+	 * @param $last_zip_entry
+	 * @param $start_time
+	 * @param $interval
+	 * @return bool|string
+	 * @throws Main\IO\InvalidPathException
+	 */
 	public static function UnZip($file_name, $last_zip_entry = "", $start_time = 0, $interval = 0)
 	{
 		//Function and securioty checks

@@ -1524,8 +1524,9 @@ class CIBlockPriceTools
 				$arOffer['ID'] = (int)$arOffer['ID'];
 				$element_id = (int)$arOffer[$productPropertyValue];
 				//No more than limit offers per element
-				if($limit > 0)
+				if ($limit > 0)
 				{
+					$arOffersPerElement[$element_id] ??= 0;
 					$arOffersPerElement[$element_id]++;
 					if($arOffersPerElement[$element_id] > $limit)
 						continue;

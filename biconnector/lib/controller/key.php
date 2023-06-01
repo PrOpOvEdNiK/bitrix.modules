@@ -53,13 +53,14 @@ class Key extends Controller
 	 */
 	public function addAction($fields, \CRestServer $server)
 	{
-		$fields['USER_ID'] = $this->prepareUserId((int)$fields['USER_ID']);
+		$userId = isset($fields['USER_ID']) ? (int)$fields['USER_ID'] : 0;
+		$fields['USER_ID'] = $this->prepareUserId($userId);
 		$res = KeyManager::save(
 			[
 				'APP_ID' => $this->getAppId($server),
 				'CONNECTION' => $fields['CONNECTION'],
 				'USER_ID' => $fields['USER_ID'],
-				'ACCESS_KEY' => $fields['ACCESS_KEY'],
+				'ACCESS_KEY' => $fields['ACCESS_KEY'] ?? '',
 				'ACTIVE' => $fields['ACTIVE'] === 'Y',
 			]
 		);

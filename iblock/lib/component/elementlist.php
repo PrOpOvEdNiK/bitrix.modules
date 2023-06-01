@@ -1720,7 +1720,7 @@ abstract class ElementList extends Base
 
 		if ($this->isPaginationMode())
 		{
-			if (is_array($this->arResult['NAV_PARAM']))
+			if (isset($this->arResult['NAV_PARAM']) && is_array($this->arResult['NAV_PARAM']))
 			{
 				$this->arResult['NAV_PARAM']['TEMPLATE_THEME'] = $this->arParams['TEMPLATE_THEME'];
 			}

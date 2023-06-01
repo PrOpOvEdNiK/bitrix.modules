@@ -33,11 +33,25 @@ class MemoryCache
 
 		if (isset(static::$cache[$entityTypeId]) && isset(static::$cache[$entityTypeId][$entityId]))
 		{
-			static::$hit[$entityTypeId]++;
+			if (isset(static::$hit[$entityTypeId]))
+			{
+				static::$hit[$entityTypeId]++;
+			}
+			else
+			{
+				static::$hit[$entityTypeId] = 1;
+			}
 			return static::$cache[$entityTypeId][$entityId];
 		}
 
-		static::$miss[$entityTypeId]++;
+		if (isset(static::$miss[$entityTypeId]))
+		{
+			static::$miss[$entityTypeId]++;
+		}
+		else
+		{
+			static::$miss[$entityTypeId] = 1;
+		}
 		return null;
 	}
 
