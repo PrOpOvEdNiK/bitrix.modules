@@ -4,7 +4,7 @@ class CBIConnectorSqlBuilder extends CSQLWhere
 {
 	protected $select;
 
-	public function setSelect($selectedFields, $options = [])
+	public function SetSelect($selectedFields, $options = [])
 	{
 		global $DB;
 
@@ -35,7 +35,7 @@ class CBIConnectorSqlBuilder extends CSQLWhere
 
 			if (isset($fieldInfo['TABLE_ALIAS']))
 			{
-				if(!isset($this->l_joins[$fieldInfo['TABLE_ALIAS']]))
+				if (!isset($this->l_joins[$fieldInfo['TABLE_ALIAS']]))
 				{
 					$this->l_joins[$fieldInfo['TABLE_ALIAS']] = 1;
 				}
@@ -47,12 +47,12 @@ class CBIConnectorSqlBuilder extends CSQLWhere
 		}
 	}
 
-	public function getSelect()
+	public function GetSelect()
 	{
 		return implode("\n  ,", $this->select);
 	}
 
-	public function getJoins()
+	public function GetJoins()
 	{
 		$result = [];
 

@@ -120,9 +120,11 @@ class Ai
 		$engine = $event->getParameter('engine');
 		$category = $engine->getCategory();
 		$module = $engine->getContext()->getModuleId();
-		$config = new Tuning\Manager();
 
-		if ($config->getItem("{$module}_allow_{$category}_generate")?->getValue())
+		$config = new Tuning\Manager();
+		$configItem = $config->getItem("{$module}_allow_{$category}_generate");
+
+		if ($configItem && $configItem->getValue())
 		{
 			return new EventResult(EventResult::SUCCESS);
 		}

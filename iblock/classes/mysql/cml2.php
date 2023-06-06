@@ -6,6 +6,9 @@ This class is used to parse and load an xml file into database table.
 */
 class CIBlockXMLFile
 {
+	public const UNPACK_STATUS_ERROR = -1;
+	public const UNPACK_STATUS_CONTINUE = 1;
+	public const UNPACK_STATUS_FINAL = 2;
 	var $_table_name = "";
 	var $_sessid = "";
 
@@ -828,23 +831,32 @@ class CIBlockXMLFile
 	 * @param string $fileName
 	 * @param int|null $lastIndex
 	 * @param int $interval
-	 * @return bool|int
+	 * @return array
 	 */
-	public static function safeUnZip(string $fileName, ?int $lastIndex = null, int $interval = 0)
+	public static function safeUnZip(string $fileName, ?int $lastIndex = null, int $interval = 0): array
 	{
+		$result = [
+			'STATUS' => self::UNPACK_STATUS_FINAL,
+			'DATA' => []
+		];
+
 		$startTime = time();
 
 		$dirName = mb_substr($fileName, 0, mb_strrpos($fileName, '/') + 1);
 		if (mb_strlen($dirName) <= mb_strlen($_SERVER['DOCUMENT_ROOT']))
 		{
-			return false;
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
 		}
 
 		/** @var CZip $archiver */
 		$archiver = CBXArchive::GetArchive($fileName, 'ZIP');
 		if (!($archiver instanceof IBXArchive))
 		{
-			return false;
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
 		}
 
 		if ($lastIndex !== null && $lastIndex < 0)
@@ -852,7 +864,20 @@ class CIBlockXMLFile
 			$lastIndex = null;
 		}
 
-		$entries = (int)$archiver->GetProperties()['nb'];
+		$archiveProperties = $archiver->GetProperties();
+		if (!is_array($archiveProperties))
+		{
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
+		}
+		if (!isset($archiveProperties['nb']))
+		{
+			$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+			return $result;
+		}
+		$entries = (int)$archiveProperties['nb'];
 		for ($index = 0; $index < $entries; $index++)
 		{
 			if ($lastIndex !== null)
@@ -874,23 +899,32 @@ class CIBlockXMLFile
 				]
 			]);
 
-			$result = $archiver->Unpack($dirName);
-			if (!$result)
+			$stepResult = $archiver->Unpack($dirName);
+			if ($stepResult === true)
 			{
-				return false;
+				return $result;
+			}
+			if ($stepResult === false)
+			{
+				$result['STATUS'] = self::UNPACK_STATUS_ERROR;
+
+				return $result;
 			}
 
 			if ($interval > 0 && (time() - $startTime) > $interval)
 			{
-				return $index;
+				$result['STATUS'] = self::UNPACK_STATUS_CONTINUE;
+				$result['DATA']['LAST_INDEX'] = $index;
+
+				return $result;
 			}
 		}
 
-		return true;
+		return $result;
 	}
 
 	/**
-	 * @deprecated deprecated since 23.0.0 - unsecure
+	 * @deprecated deprecated since 23.100.0 - unsecure
 	 * @see CIBlockXMLFile::safeUnZip
 	 *
 	 * @param $file_name
@@ -898,74 +932,35 @@ class CIBlockXMLFile
 	 * @param $start_time
 	 * @param $interval
 	 * @return bool|string
-	 * @throws Main\IO\InvalidPathException
 	 */
 	public static function UnZip($file_name, $last_zip_entry = "", $start_time = 0, $interval = 0)
 	{
-		//Function and securioty checks
-		if(!function_exists("zip_open"))
-			return false;
-		$dir_name = substr($file_name, 0, strrpos($file_name, "/") + 1);
-		if(strlen($dir_name) <= strlen($_SERVER["DOCUMENT_ROOT"]))
-			return false;
-
-		$hZip = zip_open($file_name);
-		if(!is_resource($hZip))
-			return false;
-		//Skip from last step
-		if($last_zip_entry)
+		$last_zip_entry = (string)$last_zip_entry;
+		if ($last_zip_entry === '')
 		{
-			while($entry = zip_read($hZip))
-				if(zip_entry_name($entry) == $last_zip_entry)
-					break;
+			$last_zip_entry = null;
+		}
+		else
+		{
+			$last_zip_entry = (int)$last_zip_entry;
 		}
 
-		$io = CBXVirtualIo::GetInstance();
-		//Continue unzip
-		while($entry = zip_read($hZip))
+		$internalResult = static::safeUnZip((string)$file_name, $last_zip_entry, (int)$interval);
+
+		switch ($internalResult['STATUS'])
 		{
-			$entry_name = zip_entry_name($entry);
-			//Check for directory
-			zip_entry_open($hZip, $entry);
-			if(zip_entry_filesize($entry))
-			{
-
-				$file_name = trim(str_replace("\\", "/", trim($entry_name)), "/");
-				$file_name = Main\Text\Encoding::convertEncoding($file_name, "cp866", LANG_CHARSET);
-				$file_name = preg_replace("#^import_files/tmp/webdata/\\d+/\\d+/import_files/#", "import_files/", $file_name);
-
-				$bBadFile = HasScriptExtension($file_name)
-					|| IsFileUnsafe($file_name)
-					|| !$io->ValidatePathString("/".$file_name)
-				;
-
-				if(!$bBadFile)
-				{
-					$file_name =  $io->GetPhysicalName($dir_name.Rel2Abs("/", $file_name));
-					CheckDirPath($file_name);
-					$fout = fopen($file_name, "wb");
-					if(!$fout)
-						return false;
-					$useMbstring = function_exists('mb_strlen');
-					while($data = zip_entry_read($entry, 102400))
-					{
-						$data_len = $useMbstring ? mb_strlen($data, 'latin1') : strlen($data);
-						$result = fwrite($fout, $data);
-						if($result !== $data_len)
-							return false;
-					}
-				}
-			}
-			zip_entry_close($entry);
-
-			//Jump to next step
-			if($interval > 0 && (time()-$start_time) > ($interval))
-			{
-				zip_close($hZip);
-				return $entry_name;
-			}
+			case self::UNPACK_STATUS_ERROR:
+				$result = false;
+				break;
+			case self::UNPACK_STATUS_CONTINUE:
+				$result = $internalResult['LAST_INDEX'];
+				break;
+			case self::UNPACK_STATUS_FINAL:
+			default:
+				$result = true;
+				break;
 		}
-		zip_close($hZip);
-		return true;
+
+		return $result;
 	}
 }

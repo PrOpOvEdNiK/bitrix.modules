@@ -532,6 +532,13 @@ class Deal
 		unset($fieldInfo);
 	}
 
+	/**
+	 * Returns default deal category label.
+	 *
+	 * @param string $languageId Interface language identifier.
+	 *
+	 * @return string
+	 */
 	protected static function getDefaultCategoryName($languageId)
 	{
 		$name = \Bitrix\Main\Config\Option::get('crm', 'default_deal_category_name', '', '');

@@ -22,23 +22,31 @@ abstract class Element extends Base
 {
 	public function onPrepareComponentParams($params)
 	{
+		if (!is_array($params))
+		{
+			$params = [];
+		}
 		$params['ADD_SECTIONS_CHAIN'] = (isset($params['ADD_SECTIONS_CHAIN']) && $params['ADD_SECTIONS_CHAIN'] === 'N' ? 'N' : 'Y');
 		$params['PRODUCT_DISPLAY_MODE'] = 'Y';
 		$params = parent::onPrepareComponentParams($params);
-		$params['IBLOCK_TYPE'] = isset($params['IBLOCK_TYPE']) ? trim($params['IBLOCK_TYPE']) : '';
+		$params['IBLOCK_TYPE'] = trim((string)($params['IBLOCK_TYPE'] ?? ''));
 
 		if ((int)$params['ELEMENT_ID'] > 0 && (int)$params['ELEMENT_ID'] != $params['ELEMENT_ID'] && Loader::includeModule('iblock'))
 		{
 			$this->errorCollection->setError(new Error(Loc::getMessage('CATALOG_ELEMENT_NOT_FOUND'), self::ERROR_404));
+
 			return $params;
 		}
 
 		$params['ELEMENT_ID'] = (int)$params['ELEMENT_ID'];
-		$params['ELEMENT_CODE'] = isset($params['ELEMENT_CODE']) ? trim($params['ELEMENT_CODE']) : '';
+		$params['ELEMENT_CODE'] = trim((string)($params['ELEMENT_CODE'] ?? ''));
 
 		$params['CHECK_SECTION_ID_VARIABLE'] = isset($params['CHECK_SECTION_ID_VARIABLE']) && $params['CHECK_SECTION_ID_VARIABLE'] === 'Y' ? 'Y' : 'N';
-		$params['SECTION_ID_VARIABLE'] = isset($params['SECTION_ID_VARIABLE']) ? trim($params['SECTION_ID_VARIABLE']) : '';
-		if ($params['SECTION_ID_VARIABLE'] == '' || !preg_match(self::PARAM_TITLE_MASK, $params['SECTION_ID_VARIABLE']))
+		$params['SECTION_ID_VARIABLE'] = trim((string)($params['SECTION_ID_VARIABLE'] ?? ''));
+		if (
+			$params['SECTION_ID_VARIABLE'] === ''
+			|| !preg_match(self::PARAM_TITLE_MASK, $params['SECTION_ID_VARIABLE'])
+		)
 		{
 			$params['SECTION_ID_VARIABLE'] = 'SECTION_ID';
 		}
@@ -49,12 +57,12 @@ abstract class Element extends Base
 			$params['FROM_SECTION'] = trim($this->request->get($params['SECTION_ID_VARIABLE']));
 		}
 
-		$params['SECTIONS_CHAIN_START_FROM'] = isset($params['SECTIONS_CHAIN_START_FROM']) ? (int)$params['SECTIONS_CHAIN_START_FROM'] : 0;
-		$params['META_KEYWORDS'] = trim($params['META_KEYWORDS']);
-		$params['META_DESCRIPTION'] = trim($params['META_DESCRIPTION']);
-		$params['BROWSER_TITLE'] = trim($params['BROWSER_TITLE']);
+		$params['SECTIONS_CHAIN_START_FROM'] = (int)($params['SECTIONS_CHAIN_START_FROM'] ?? 0);
+		$params['META_KEYWORDS'] = trim((string)($params['META_KEYWORDS'] ?? ''));
+		$params['META_DESCRIPTION'] = trim((string)($params['META_DESCRIPTION'] ?? ''));
+		$params['BROWSER_TITLE'] = trim((string)($params['BROWSER_TITLE'] ?? ''));
 
-		$params['BACKGROUND_IMAGE'] = isset($params['BACKGROUND_IMAGE']) ? trim($params['BACKGROUND_IMAGE']) : '';
+		$params['BACKGROUND_IMAGE'] = trim((string)($params['BACKGROUND_IMAGE'] ?? ''));
 		if ($params['BACKGROUND_IMAGE'] === '-')
 		{
 			$params['BACKGROUND_IMAGE'] = '';
@@ -62,10 +70,14 @@ abstract class Element extends Base
 
 		$params['USE_MAIN_ELEMENT_SECTION'] = isset($params['USE_MAIN_ELEMENT_SECTION']) && $params['USE_MAIN_ELEMENT_SECTION'] === 'Y';
 		$params['ADD_ELEMENT_CHAIN'] = isset($params['ADD_ELEMENT_CHAIN']) && $params['ADD_ELEMENT_CHAIN'] === 'Y';
-		$params['LINK_IBLOCK_TYPE'] = trim($params['LINK_IBLOCK_TYPE']);
-		$params['LINK_IBLOCK_ID'] = (int)$params['LINK_IBLOCK_ID'];
-		$params['LINK_PROPERTY_SID'] = trim($params['LINK_PROPERTY_SID']);
-		$params['LINK_ELEMENTS_URL'] = trim($params['LINK_ELEMENTS_URL']) ?: 'link.php?PARENT_ELEMENT_ID=#ELEMENT_ID#';
+		$params['LINK_IBLOCK_TYPE'] = trim((string)($params['LINK_IBLOCK_TYPE'] ?? ''));
+		$params['LINK_IBLOCK_ID'] = (int)($params['LINK_IBLOCK_ID'] ?? 0);
+		$params['LINK_PROPERTY_SID'] = trim((string)($params['LINK_PROPERTY_SID'] ?? ''));
+		$params['LINK_ELEMENTS_URL'] = trim((string)($params['LINK_ELEMENTS_URL'] ?? ''));
+		if ($params['LINK_ELEMENTS_URL'] === '')
+		{
+			$params['LINK_ELEMENTS_URL'] = 'link.php?PARENT_ELEMENT_ID=#ELEMENT_ID#';
+		}
 
 		$params['SHOW_WORKFLOW'] = $this->request->get('show_workflow') === 'Y';
 		if ($params['SHOW_WORKFLOW'])
@@ -597,11 +609,14 @@ abstract class Element extends Base
 						|| Tools::isCheckboxProperty($prop)
 					)
 					{
-						$element['DISPLAY_PROPERTIES'][$pid] = \CIBlockFormatProperties::GetDisplayValue($element, $prop, 'catalog_out');
+						$element['DISPLAY_PROPERTIES'][$pid] = \CIBlockFormatProperties::GetDisplayValue($element, $prop);
 					}
 					unset($prop);
 				}
 				unset($pid);
+
+				\CIBlockFormatProperties::clearCache();
+				Tools::clearCache();
 			}
 
 			if ($this->arParams['ADD_PROPERTIES_TO_BASKET'] === 'Y' && !empty($iblockParams['CART_PROPERTIES']))
@@ -1247,7 +1262,7 @@ abstract class Element extends Base
 		$double = array();
 		$item['OFFER_GROUP'] = false;
 		$item['OFFERS_PROP'] = false;
-		$ids = array($item['ID']);
+
 		$iblockParams = $this->storage['IBLOCK_PARAMS'][$item['IBLOCK_ID']];
 
 		$boolSkuDisplayProps = false;
@@ -1262,7 +1277,6 @@ abstract class Element extends Base
 			if (isset($double[$offer['ID']]))
 				continue;
 
-			$ids[] = $offer['ID'];
 			$offer['OFFER_GROUP'] = false;
 
 			$row = array();
@@ -1280,6 +1294,7 @@ abstract class Element extends Base
 			{
 				$boolSkuDisplayProps = true;
 			}
+			$offer['TREE'] = [];
 
 			$double[$offer['ID']] = true;
 			$newOffers[$keyOffer] = $offer;
@@ -1298,11 +1313,6 @@ abstract class Element extends Base
 			{
 				if ($boolExist)
 				{
-					if (!isset($item['OFFERS'][$keyOffer]['TREE']))
-					{
-						$item['OFFERS'][$keyOffer]['TREE'] = array();
-					}
-
 					$item['OFFERS'][$keyOffer]['TREE']['PROP_'.$skuPropList[$propCode]['ID']] = $matrix[$keyOffer][$propCode]['VALUE'];
 					$item['OFFERS'][$keyOffer]['SKU_SORT_'.$propCode] = $matrix[$keyOffer][$propCode]['SORT'];
 					$usedFields[$propCode] = true;

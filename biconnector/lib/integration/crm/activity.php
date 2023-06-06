@@ -7,8 +7,8 @@ class Activity
 {
 	/**
 	 * Event handler for onBIConnectorDataSources event.
-	 * Adds a key crm_deal to the second event parameter.
-	 * Fills it with data to retrieve information from b_crm_deal table.
+	 * Adds a key crm_activity to the second event parameter.
+	 * Fills it with data to retrieve information from b_crm_act table.
 	 *
 	 * @param \Bitrix\Main\Event $event Event data.
 	 *
@@ -303,6 +303,14 @@ class Activity
 		unset($fieldInfo);
 	}
 
+	/**
+	 * Transforms php array into sql CASE operator.
+	 *
+	 * @param array $dictionary Items array to transform.
+	 * @param \Bitrix\Main\DB\SqlHelper $helper Sql helper to escape strings.
+	 *
+	 * @return string
+	 */
 	public static function mapDictionarytoSqlCase($dictionary, $helper)
 	{
 		krsort($dictionary);

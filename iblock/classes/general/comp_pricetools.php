@@ -1636,7 +1636,7 @@ class CIBlockPriceTools
 								(!$boolArr && (string)$prop["VALUE"] !== '')
 							)
 							{
-								$arOffer["DISPLAY_PROPERTIES"][$pid] = CIBlockFormatProperties::GetDisplayValue($arOffer, $prop, "catalog_out");
+								$arOffer["DISPLAY_PROPERTIES"][$pid] = CIBlockFormatProperties::GetDisplayValue($arOffer, $prop);
 							}
 							unset($boolArr, $prop);
 						}

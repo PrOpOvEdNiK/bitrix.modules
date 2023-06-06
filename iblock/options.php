@@ -186,8 +186,9 @@ if ($request->isPost() && $currentAction !== null && check_bitrix_sessid())
 	else
 	{
 		LocalRedirect($APPLICATION->GetCurPage()
-			. "?mid=" . urlencode($mid)
-			. "&lang=" . LANGUAGE_ID
+			. '?lang=' . LANGUAGE_ID
+			. '&mid=' . urlencode($mid)
+			. '&mid_menu=1'
 			. ($backUrl !== '' ? "&back_url_settings=" . urlencode($backUrl) : '')
 			. "&" . $tabControl->ActiveTabParam())
 		;
@@ -251,7 +252,7 @@ $optionHints = array(
 );
 
 $tabControl->Begin();
-?><form method="post" action="<?= $APPLICATION->GetCurPage()?>?mid=<?=urlencode($mid)?>&amp;lang=<?= LANGUAGE_ID?>"><?php
+?><form method="post" action="<?= $APPLICATION->GetCurPage()?>?lang=<?= LANGUAGE_ID; ?>&mid=<?= urlencode($mid); ?>&mid_menu=1"><?php
 $tabControl->BeginNextTab();
 foreach($arAllOptions as $arOption)
 {

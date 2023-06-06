@@ -1568,7 +1568,12 @@ class CAllIBlockSection
 
 		if(($IBLOCK_SECTION_ID > 0) && ($this->LAST_ERROR == ''))
 		{
-			$rsParent = $DB->Query("SELECT ID, IBLOCK_ID FROM b_iblock_section WHERE ID = ".$IBLOCK_SECTION_ID);
+			$sqlCheck = 'select ID, IBLOCK_ID from b_iblock_section where ID = ' . $IBLOCK_SECTION_ID;
+			if ($ID !== false)
+			{
+				$sqlCheck .= ' and ID != '.(int)$ID;
+			}
+			$rsParent = $DB->Query($sqlCheck);
 			$arParent = $rsParent->Fetch();
 			if(!$arParent)
 				$this->LAST_ERROR = GetMessage("IBLOCK_BAD_BLOCK_SECTION_PARENT")."<br>";
@@ -2227,7 +2232,8 @@ class CAllIBlockSection
 		//echo "<pre>",htmlspecialcharsbx($strSql),"</pre>";
 		$res = $DB->Query($strSql);
 		$res = $res->Fetch();
-		return $res["CNT"];
+
+		return (int)($res['CNT'] ?? 0);
 	}
 
 	protected static function _check_rights_sql($min_permission, $permissionsBy = null)

@@ -3064,13 +3064,13 @@ class CAllIBlockElement
 
 					if(preg_match("/^([^.]+)\\.([^.]+)$/", $PR_ID, $arMatch))
 					{
-						$db_prop = CIBlockProperty::GetPropertyArray($arMatch[1], CIBlock::_MergeIBArrays($arFilter["IBLOCK_ID"], $arFilter["IBLOCK_CODE"]));
+						$db_prop = CIBlockProperty::GetPropertyArray($arMatch[1], $iblockIds);
 						if(is_array($db_prop) && $db_prop["PROPERTY_TYPE"] == "E")
 							$this->MkPropertySelect($arMatch, $db_prop, $arJoinProps, $bWasGroup, $sGroupBy, $sSelect, true);
 					}
 					else
 					{
-						if($db_prop = CIBlockProperty::GetPropertyArray($PR_ID, CIBlock::_MergeIBArrays($arFilter["IBLOCK_ID"], $arFilter["IBLOCK_CODE"])))
+						if($db_prop = CIBlockProperty::GetPropertyArray($PR_ID, $iblockIds))
 							$this->MkPropertySelect($PR_ID, $db_prop, $arJoinProps, $bWasGroup, $sGroupBy, $sSelect, true);
 					}
 				}
@@ -5804,11 +5804,11 @@ class CAllIBlockElement
 										$property,
 										array(
 											'VALUE' => $oneValue,
-											'DESCRIPTION' => ($existElementDescription ? $value['DESCRIPTION'][$property['ID']][$valueKey] : ''),
+											'DESCRIPTION' => ($existElementDescription ? $value['DESCRIPTION'][$property['ID']][$valueKey] : null),
 										)
 									)
 								);
-								$value[$property['ID']][$valueKey] = $raw['VALUE'];
+								$value[$property['ID']][$valueKey] = $raw['VALUE'] ?? null;
 								if (!$existDescription)
 								{
 									$value['DESCRIPTION'] = array();
@@ -5862,14 +5862,14 @@ class CAllIBlockElement
 									{
 										$selectedValues[$listKey] = $enumList[$property['ID']][$listValue];
 										$selectedValues[$listKey]['DESCRIPTION'] = (
-										$existElementDescription && array_key_exists($listKey, $value['DESCRIPTION'][$property['ID']])
-											? $value['DESCRIPTION'][$property['ID']][$listKey]
-											: ''
+											$existElementDescription && array_key_exists($listKey, $value['DESCRIPTION'][$property['ID']])
+												? $value['DESCRIPTION'][$property['ID']][$listKey]
+												: null
 										);
 										$selectedValues[$listKey]['PROPERTY_VALUE_ID'] = (
-										$existElementPropertyID && array_key_exists($listKey, $value['PROPERTY_VALUE_ID'][$property['ID']])
-											? $value['PROPERTY_VALUE_ID'][$property['ID']][$listKey]
-											: ''
+											$existElementPropertyID && array_key_exists($listKey, $value['PROPERTY_VALUE_ID'][$property['ID']])
+												? $value['PROPERTY_VALUE_ID'][$property['ID']][$listKey]
+												: null
 										);
 									}
 								}
@@ -6035,17 +6035,17 @@ class CAllIBlockElement
 									$property,
 									array(
 										'VALUE' => $value[$property['ID']],
-										'DESCRIPTION' => ($existElementDescription ? $value['DESCRIPTION'][$property['ID']] : '')
+										'DESCRIPTION' => ($existElementDescription ? $value['DESCRIPTION'][$property['ID']] : null)
 									)
 								)
 							);
-							$value[$property['ID']] = $raw['VALUE'];
+							$value[$property['ID']] = $raw['VALUE'] ?? null;
 							if (!$existDescription)
 							{
 								$value['DESCRIPTION'] = array();
 								$existDescription = true;
 							}
-							$value['DESCRIPTION'][$property['ID']] = (string)$raw['DESCRIPTION'];
+							$value['DESCRIPTION'][$property['ID']] = (string)($raw['DESCRIPTION'] ?? null);
 							$existElementDescription = true;
 						}
 						if ($property['PROPERTY_TYPE'] == Iblock\PropertyTable::TYPE_LIST)
@@ -6085,7 +6085,7 @@ class CAllIBlockElement
 						else
 						{
 							$elementValues[$code]['VALUE'] = $value[$property['ID']];
-							$elementValues[$code]['DESCRIPTION'] = ($existElementDescription ? $value['DESCRIPTION'][$property['ID']] : '');
+							$elementValues[$code]['DESCRIPTION'] = ($existElementDescription ? $value['DESCRIPTION'][$property['ID']] : null);
 						}
 					}
 

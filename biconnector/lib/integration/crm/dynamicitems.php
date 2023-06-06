@@ -7,7 +7,7 @@ class DynamicItems
 {
 	/**
 	 * Event handler for onBIConnectorDataSources event.
-	 * Adds a key crm_deal to the second event parameter.
+	 * Adds a key crm_dynamic_items_XX to the second event parameter.
 	 * Fills it with data to retrieve information from b_crm_dynamic_items_XX tables.
 	 *
 	 * @param \Bitrix\Main\Event $event Event data.
@@ -369,7 +369,7 @@ class DynamicItems
 			$factory = \Bitrix\Crm\Service\Container::getInstance()->getFactory($type->getEntityTypeId());
 			if ($factory)
 			{
-				foreach($factory->getUserFields() as $userField)
+				foreach ($factory->getUserFields() as $userField)
 				{
 					$uf = [
 						'IS_METRIC' => 'N', // 'Y'
@@ -446,6 +446,13 @@ class DynamicItems
 		}
 	}
 
+	/**
+	 * Returns default deal category label.
+	 *
+	 * @param string $languageId Interface language identifier.
+	 *
+	 * @return string
+	 */
 	protected static function getDefaultCategoryName($languageId)
 	{
 		$name = \Bitrix\Main\Config\Option::get('crm', 'default_deal_category_name', '', '');

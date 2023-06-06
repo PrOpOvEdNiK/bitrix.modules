@@ -598,6 +598,15 @@ class Order extends Base
 				$payment = $order->getPaymentCollection()->getItemById($paymentId);
 			}
 
+			if ($payment === null)
+			{
+				$this->addError(
+					new Error(Loc::getMessage('SALESCENTER_CONTROLLER_ORDER_CANT_SEND_SMS_PAYMENT_NOT_FOUND'))
+				);
+
+				return;
+			}
+
 			$shipment = null;
 			if ($shipmentId)
 			{

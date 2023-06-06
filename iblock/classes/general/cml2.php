@@ -1952,9 +1952,13 @@ class CIBlockCMLImport
 					continue;
 			}
 
-			if (($arProperty["SERIALIZED"] ?? '') === "Y")
+			if (isset($arProperty['SERIALIZED']))
 			{
-				$arProperty["DEFAULT_VALUE"] = unserialize($arProperty["DEFAULT_VALUE"], ['allowed_classes' => false]);
+				if ($arProperty['SERIALIZED'] === 'Y')
+				{
+					$arProperty['DEFAULT_VALUE'] = unserialize($arProperty['DEFAULT_VALUE'], ['allowed_classes' => false]);
+				}
+				unset($arProperty['SERIALIZED']);
 			}
 
 			$rsProperty = $obProperty->GetList(array(), array("IBLOCK_ID"=>$IBLOCK_ID, "XML_ID"=>$arProperty["XML_ID"]));

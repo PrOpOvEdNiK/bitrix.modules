@@ -276,16 +276,7 @@ class CIBlockPropertyHTML
 		if (!is_array($value["VALUE"]))
 		{
 			$value['VALUE'] = (string)$value['VALUE'];
-			if ($value['VALUE'] === '')
-			{
-				$return = [
-					"VALUE" => [
-						'TEXT' => $value["VALUE"],
-						'TYPE' => 'TEXT',
-					]
-				];
-			}
-			else
+			if ($value['VALUE'] !== '')
 			{
 				if (CheckSerializedData($value["VALUE"]))
 				{
@@ -317,10 +308,17 @@ class CIBlockPropertyHTML
 				$value['DESCRIPTION'] = (string)$value['DESCRIPTION'];
 				if ($value['DESCRIPTION'] !== '')
 				{
+					if (!is_array($return))
+					{
+						$return = [
+							"VALUE" => null,
+						];
+					}
 					$return["DESCRIPTION"] = trim($value["DESCRIPTION"]);
 				}
 			}
 		}
+
 		return $return;
 	}
 

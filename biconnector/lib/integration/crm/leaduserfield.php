@@ -16,20 +16,18 @@ class LeadUserField
 	 */
 	public static function onBIConnectorDataSources(\Bitrix\Main\Event $event)
 	{
+		global $USER_FIELD_MANAGER;
+
 		if (!\Bitrix\Main\Loader::includeModule('crm'))
 		{
 			return;
 		}
 
 		$params = $event->getParameters();
-		$manager = $params[0];
+		//$manager = $params[0];
 		$result = &$params[1];
 		$languageId = $params[2];
 
-		$connection = $manager->getDatabaseConnection();
-		$helper = $connection->getSqlHelper();
-
-		global $USER_FIELD_MANAGER;
 		$userFields = $USER_FIELD_MANAGER->getUserFields(\CCrmLead::$sUFEntityID, 0, $languageId);
 		if (!$userFields)
 		{
