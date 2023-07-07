@@ -5,20 +5,18 @@
  * @subpackage seo
  * @copyright 2001-2013 Bitrix
  */
-namespace Bitrix\Seo;
+namespace Bitrix\Seo\Sitemap\File;
 
+use Bitrix\Main\IO\InvalidPathException;
 use Bitrix\Main\IO\Path;
 use Bitrix\Main\IO\File;
 use Bitrix\Main\SiteTable;
 use Bitrix\Main\Text\Converter;
 
 /**
- * Base class for sitemapfile
- * Class SitemapFile
- * @package Bitrix\Seo
+ * Base class for sitemap file
  */
-class SitemapFile
-	extends File
+class Base extends File
 {
 	const XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>';
 
@@ -41,23 +39,23 @@ class SitemapFile
 
 	protected $siteRoot = '';
 	protected $partFile = '';
-	protected $partList = array();
-	protected $part = 0;
-	protected $partChanged = false;
-	protected $footerClosed = false;
+	protected array $partList = [];
+	protected int $part = 0;
+	protected bool $partChanged = false;
+	protected bool $footerClosed = false;
 
 	protected $urlToSearch = '';
 	protected $urlFound = false;
 
 	public function __construct($fileName, $settings)
 	{
-		$this->settings = array(
+		$this->settings = [
 			'SITE_ID' => $settings['SITE_ID'],
 			'PROTOCOL' => $settings['PROTOCOL'] == 'https' ? 'https' : 'http',
 			'DOMAIN' => $settings['DOMAIN'],
-		);
+		];
 
-		$site = SiteTable::getRow(array("filter" => array("LID" => $this->settings['SITE_ID'])));
+		$site = SiteTable::getRow(["filter" => ["LID" => $this->settings['SITE_ID']]]);
 
 		$this->documentRoot = SiteTable::getDocumentRoot($this->settings['SITE_ID']);
 		$this->footerClosed = false;
@@ -190,12 +188,12 @@ class SitemapFile
 	{
 		return $this->isCurrentPartNotEmpty() ? array_merge($this->partList, array($this->getName())) : $this->partList;
 	}
-	
+
 	/**
 	 * Divide path to directory and filemname
-	 * @return array
+	 * @return string
 	 */
-	public function getPathDirectory()
+	public function getPathDirectory(): string
 	{
 //		normalize slashes
 		$siteRoot = Path::normalize($this->siteRoot);
@@ -246,7 +244,7 @@ class SitemapFile
 	 */
 	public function appendEntry($entry)
 	{
-		if($this->isSplitNeeded())
+		if ($this->isSplitNeeded())
 		{
 			$this->split();
 			$this->appendEntry($entry);
@@ -338,15 +336,20 @@ class SitemapFile
 	 * @return void
 	 * @throws \Bitrix\Main\IO\FileNotFoundException
 	 */
-	public function addFileEntry(File $f)
+	public function addFileEntry(File $f): void
 	{
-		if($f->isExists() && !$f->isSystem())
+		if ($f->isExists() && !$f->isSystem())
 		{
 			$e = [];
-			$this->addEntry(array(
-				'XML_LOC' => $this->settings['PROTOCOL'].'://'.\CBXPunycode::toASCII($this->settings['DOMAIN'], $e).$this->getFileUrl($f),
+			$this->addEntry([
+				'XML_LOC' =>
+					$this->settings['PROTOCOL']
+					. '://'
+					. \CBXPunycode::toASCII($this->settings['DOMAIN'], $e)
+					. $this->getFileUrl($f)
+				,
 				'XML_LASTMOD' => date('c', $f->getModificationTime()),
-			));
+			]);
 		}
 	}
 
@@ -361,10 +364,15 @@ class SitemapFile
 	public function addIBlockEntry($url, $modifiedDate)
 	{
 		$e = [];
-		$this->addEntry(array(
-			'XML_LOC' => $this->settings['PROTOCOL'].'://'.\CBXPunycode::toASCII($this->settings['DOMAIN'], $e).$url,
+		$this->addEntry([
+			'XML_LOC' =>
+				$this->settings['PROTOCOL']
+				. '://'
+				. \CBXPunycode::toASCII($this->settings['DOMAIN'], $e)
+				. $url
+			,
 			'XML_LASTMOD' => date('c', $modifiedDate - \CTimeZone::getOffset()),
-		));
+		]);
 	}
 
 	/**
@@ -377,13 +385,18 @@ class SitemapFile
 	 */
 	public function appendIBlockEntry($url, $modifiedDate)
 	{
-		if($this->isExists())
+		if ($this->isExists())
 		{
 			$e = [];
-			$this->appendEntry(array(
-				'XML_LOC' => $this->settings['PROTOCOL'].'://'.\CBXPunycode::toASCII($this->settings['DOMAIN'], $e).$url,
+			$this->appendEntry([
+				'XML_LOC' =>
+					$this->settings['PROTOCOL']
+					. '://'
+					. \CBXPunycode::toASCII($this->settings['DOMAIN'], $e)
+					. $url
+				,
 				'XML_LASTMOD' => date('c', $modifiedDate - \CTimeZone::getOffset()),
-			));
+			]);
 		}
 		else
 		{

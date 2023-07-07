@@ -5,24 +5,21 @@
  * @subpackage seo
  * @copyright 2001-2013 Bitrix
  */
-namespace Bitrix\Seo;
+namespace Bitrix\Seo\Sitemap\File;
 
 use Bitrix\Main\Text\Converter;
 
 /**
  * Generates index file from sitemap files list
- * Class SitemapIndex
- * @package Bitrix\Seo
  */
-class SitemapIndex
-	extends SitemapFile
+class Index extends Base
 {
 	const FILE_HEADER = '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 	const FILE_FOOTER = '</sitemapindex>';
 
 	const ENTRY_TPL = '<sitemap><loc>%s</loc><lastmod>%s</lastmod></sitemap>';
 
-	public function createIndex($arIndex)
+	public function createIndex(array $arIndex)
 	{
 		$str = self::XML_HEADER.self::FILE_HEADER;
 
@@ -46,7 +43,7 @@ class SitemapIndex
 
 	public function appendIndexEntry($file)
 	{
-		if($this->isExists() && $file->isExists())
+		if ($this->isExists() && $file->isExists())
 		{
 			$e = [];
 			$fileUrlEnc = Converter::getXmlConverter()->encode($this->settings['PROTOCOL'].'://'.\CBXPunycode::toASCII($this->settings['DOMAIN'], $e).$this->getFileUrl($file));

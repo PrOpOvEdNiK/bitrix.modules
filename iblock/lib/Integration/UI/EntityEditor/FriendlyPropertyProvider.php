@@ -2,11 +2,21 @@
 
 namespace Bitrix\Iblock\Integration\UI\EntityEditor;
 
-final class FrendlyPropertyProvider extends PropertyProvider
+use Bitrix\Main\Localization\Loc;
+
+final class FriendlyPropertyProvider extends PropertyProvider
 {
+	public const FEATURE_PUBLIC_PROPERTY = 'IS_PUBLIC';
+
 	public function getEntityFields(): array
 	{
 		$fields = parent::getEntityFields();
+		$fields[] = [
+			'name' => self::FEATURE_PUBLIC_PROPERTY,
+			'title' => Loc::getMessage('IBLOCK_ENTITY_EDITOR_FRIENDLY_PROPERTY_FEATURE_PUBLIC'),
+			'type' => 'boolean',
+			'default_value' => 'Y',
+		];
 		$fields = $this->removeDifficultFields($fields);
 
 		return $fields;

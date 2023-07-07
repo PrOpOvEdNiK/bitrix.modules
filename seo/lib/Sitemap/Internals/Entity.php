@@ -1,37 +1,15 @@
 <?php
-/**
- * Bitrix Framework
- * @package bitrix
- * @subpackage seo
- * @copyright 2001-2013 Bitrix
- */
-namespace Bitrix\Seo;
+
+namespace Bitrix\Seo\Sitemap\Internals;
 
 use Bitrix\Main\Entity;
 
-/**
- * Class SitemapEntityTable
- * @package Bitrix\Seo
- *
- * DO NOT WRITE ANYTHING BELOW THIS
- *
- * <<< ORMENTITYANNOTATION
- * @method static EO_SitemapEntity_Query query()
- * @method static EO_SitemapEntity_Result getByPrimary($primary, array $parameters = array())
- * @method static EO_SitemapEntity_Result getById($id)
- * @method static EO_SitemapEntity_Result getList(array $parameters = array())
- * @method static EO_SitemapEntity_Entity getEntity()
- * @method static \Bitrix\Seo\EO_SitemapEntity createObject($setDefaultValues = true)
- * @method static \Bitrix\Seo\EO_SitemapEntity_Collection createCollection()
- * @method static \Bitrix\Seo\EO_SitemapEntity wakeUpObject($row)
- * @method static \Bitrix\Seo\EO_SitemapEntity_Collection wakeUpCollection($rows)
- */
-class SitemapEntityTable extends Entity\DataManager
+class EntityTable extends Entity\DataManager
 {
 	const ENTITY_TYPE = 'ENTITY';
-	protected static $entityCache = array();
+	protected static array $entityCache = [];
 
-	public static function getFilePath()
+	public static function getFilePath(): string
 	{
 		return __FILE__;
 	}
@@ -73,7 +51,7 @@ class SitemapEntityTable extends Entity\DataManager
 				'required' => true,
 			),
 			'SITEMAP' => array(
-				'data_type' => 'Bitrix\Seo\SitemapTable',
+				'data_type' => 'Bitrix\Seo\Sitemap\Internals\SitemapTable',
 				'reference' => array('=this.SITEMAP_ID' => 'ref.ID'),
 			)
 		);
@@ -83,14 +61,14 @@ class SitemapEntityTable extends Entity\DataManager
 
 	public static function getSitemapsByEntityId($entityId)
 	{
-		if(!isset(self::$entityCache[$entityId.'Sitemaps']))
+		if (!isset(self::$entityCache[$entityId.'Sitemaps']))
 		{
 			self::$entityCache[$entityId] = array();
 
 			$dbRes = self::getList(array(
 				'filter' => array(
-					'ENTITY_TYPE' => static::ENTITY_TYPE,
-					'ENTITY_ID' => $entityId
+					'=ENTITY_TYPE' => static::ENTITY_TYPE,
+					'=ENTITY_ID' => $entityId
 				),
 				'select' => array(
 					'SITEMAP_ID',

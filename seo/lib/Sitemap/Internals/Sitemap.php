@@ -1,35 +1,12 @@
 <?php
-/**
- * Bitrix Framework
- * @package bitrix
- * @subpackage seo
- * @copyright 2001-2013 Bitrix
- */
-namespace Bitrix\Seo;
 
-use \Bitrix\Main;
+namespace Bitrix\Seo\Sitemap\Internals;
+
 use \Bitrix\Main\Entity;
 use \Bitrix\Main\Localization\Loc;
 
 Loc::loadMessages(__FILE__);
 
-// Table with settings
-/**
- * Class SitemapTable
- *
- * DO NOT WRITE ANYTHING BELOW THIS
- *
- * <<< ORMENTITYANNOTATION
- * @method static EO_Sitemap_Query query()
- * @method static EO_Sitemap_Result getByPrimary($primary, array $parameters = array())
- * @method static EO_Sitemap_Result getById($id)
- * @method static EO_Sitemap_Result getList(array $parameters = array())
- * @method static EO_Sitemap_Entity getEntity()
- * @method static \Bitrix\Seo\EO_Sitemap createObject($setDefaultValues = true)
- * @method static \Bitrix\Seo\EO_Sitemap_Collection createCollection()
- * @method static \Bitrix\Seo\EO_Sitemap wakeUpObject($row)
- * @method static \Bitrix\Seo\EO_Sitemap_Collection wakeUpCollection($rows)
- */
 class SitemapTable extends Entity\DataManager
 {
 	const SETTINGS_DEFAULT_FILE_MASK = '*.php,*.html';
@@ -49,35 +26,35 @@ class SitemapTable extends Entity\DataManager
 
 	public static function getMap()
 	{
-		$fieldsMap = array(
-			'ID' => array(
+		$fieldsMap = [
+			'ID' => [
 				'data_type' => 'integer',
 				'primary' => true,
 				'autocomplete' => true,
-			),
-			'TIMESTAMP_X' => array(
+			],
+			'TIMESTAMP_X' => [
 				'data_type' => 'datetime'
-			),
-			'SITE_ID' => array(
+			],
+			'SITE_ID' => [
 				'data_type' => 'string',
 				'required' => true,
-			),
-			'ACTIVE' => array(
+			],
+			'ACTIVE' => [
 				'data_type' => 'boolean',
-				'values' => array(self::INACTIVE, self::ACTIVE)
-			),
-			'NAME' => array(
+				'values' => [self::INACTIVE, self::ACTIVE]
+			],
+			'NAME' => [
 				'data_type' => 'string',
 				'required' => true,
 				'title' => Loc::getMessage('SITEMAP_NAME_TITLE'),
-			),
-			'DATE_RUN' => array(
+			],
+			'DATE_RUN' => [
 				'data_type' => 'datetime',
-			),
-			'SETTINGS' => array(
+			],
+			'SETTINGS' => [
 				'data_type' => 'text',
-			),
-		);
+			],
+		];
 
 		return $fieldsMap;
 	}
