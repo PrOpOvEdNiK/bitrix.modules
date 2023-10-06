@@ -14,15 +14,15 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@gitlab.magnifico.pro:tools/module.git"
+            "url": "git@gitlab.bizprofi.ru:tools/module.git"
         },
         {
             "type": "vcs",
-            "url": "git@gitlab.magnifico.pro:tools/lang.git"
+            "url": "git@gitlab.bizprofi.ru:tools/lang.git"
         },
         {
             "type": "vcs",
-            "url": "git@gitlab.magnifico.pro:github/bitrix-migration.git"
+            "url": "git@gitlab.bizprofi.ru:github/bitrix-migration.git"
         }
     ]
 }

@@ -11,17 +11,17 @@ use Bizprofi\Tools\Lang;
 trait SocialnetworkHandlers
 {
     public static function onSocLogComment($id, $fields)
-    {
+    { 
         if (empty($fields['EVENT_ID']) || empty($fields['USER_ID']) || empty($fields['MESSAGE'])) {
             return;
         }
 
-        //пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+        //для отчётов и задач свой метод
         if (
             'report_comment' === $fields['EVENT_ID']
             || 'tasks_comment' === $fields['EVENT_ID']
             || 'blog_comment' === $fields['EVENT_ID']
-            || 'crm_activity_add_comment' === $fields['EVENT_ID'] // пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+            || 'crm_activity_add_comment' === $fields['EVENT_ID'] // Это на самом деле задачи
         ) {
             return;
         }
@@ -31,7 +31,7 @@ trait SocialnetworkHandlers
 
         $users = static::getUsersFromMessage($fields['MESSAGE']);
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //вытащим дату из таблицы
         $logComment = Socialnetwork\LogCommentTable::wakeUpObject($id);
         $logComment->fill(['LOG_DATE', 'LOG.ID', 'LOG.RATING_TYPE_ID']);
         $date = $logComment->getLogDate();
@@ -44,7 +44,7 @@ trait SocialnetworkHandlers
             return;
         }
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        // очистим уведомления в этой сущности для отмеченных пользователей и автора
         NotificationTable::clearEntityByUser(
             array_merge($users, [$user]),
             NotificationBindingTable::SOC_LOG,
@@ -53,13 +53,13 @@ trait SocialnetworkHandlers
         );
 
         NotificationResponsibleTable::clearResponsible($logId, NotificationBindingTable::SOC_LOG, $user);
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //никого не упомянули, выходим, ничего не создаем
         if (!count($users)) {
             return;
         }
 
         foreach ($users as $key => $userId) {
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //владельцу комментария
             static::sendSocCommentNotify(
                 $id,
                 $logId,
@@ -70,7 +70,7 @@ trait SocialnetworkHandlers
                 [ $userId ]
             );
 
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //упомянутым пользователям
             static::sendSocCommentNotify(
                 $id,
                 $logId,
@@ -79,11 +79,14 @@ trait SocialnetworkHandlers
                 $date,
                 NotificationTable::NEED_REACTION
             );
+
+
+ \CSocNetLogRights::Add ($fields['LOG_ID'], array ('U'.$userId));
         }
     }
 
     public static function onSocNetCommentUpdate($id, $fields)
-    {
+    { 
         if (empty($fields['EVENT_ID']) || empty($fields['MESSAGE'])) {
             return;
         }
@@ -92,7 +95,7 @@ trait SocialnetworkHandlers
             return;
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ id пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //получем id комментатора
         $logComment = Socialnetwork\LogCommentTable::wakeUpObject($id);
         $logComment->fillUserId();
         $user = $logComment->getUserId();
@@ -107,12 +110,12 @@ trait SocialnetworkHandlers
 
         $logId = $fields['LOG_ID'];
         $users = static::getUsersFromMessage($fields['MESSAGE']);
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //вытащим дату из таблицы
         $logComment = Socialnetwork\LogCommentTable::wakeUpObject($id);
         $logComment->fillLogDate();
         $date = $logComment->getLogDate();
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        // очистим уведомления в этой сущности для отмеченных пользователей и автора
         NotificationTable::clearEntityByUser(
             array_merge($users, [$user]),
             NotificationBindingTable::SOC_LOG,
@@ -120,13 +123,13 @@ trait SocialnetworkHandlers
         );
 
         NotificationResponsibleTable::clearResponsible($logId, NotificationBindingTable::SOC_LOG, $user);
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //никого не упомянули, выходим, ничего не создаем
         if (!count($users)) {
             return;
         }
 
         foreach ($users as $key => $userId) {
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //владельцу комментария
             static::sendSocCommentNotify(
                 $id,
                 $logId,
@@ -137,7 +140,7 @@ trait SocialnetworkHandlers
                 [ $userId ]
             );
 
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //упомянутым пользователям
             static::sendSocCommentNotify(
                 $id,
                 $logId,
@@ -159,7 +162,7 @@ trait SocialnetworkHandlers
      */
     public static function onSocNetCommentDelete($id)
     {
-        //пїЅпїЅ id пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //по id комментария сонета найдём соответствующие записи нотификаций
         $notyCollection = NotificationTable::query()
             ->setSelect(['ID'])
             ->where('BINDING.ENTITY_TYPE', NotificationBindingTable::SOC_LOG_COMMENT)
@@ -175,7 +178,7 @@ trait SocialnetworkHandlers
         $connection = NotificationTable::getEntity()->getConnection();
         $connection->startTransaction();
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+        //удаляем в цикле
         foreach ($notyCollection as $noty) {
             $result = $noty->delete();
             if (!$result->isSuccess()) {
@@ -200,7 +203,7 @@ trait SocialnetworkHandlers
     ) {
         $connecton = NotificationTable::getEntity()->getConnection();
         $connecton->startTransaction();
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        //добавляем основную запись
         $result = NotificationTable::add([
             'TO_USER' => $to,
             'FROM_USER' => $from,
@@ -217,7 +220,7 @@ trait SocialnetworkHandlers
 
         $id = $result->getId();
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим отмеченных для статусов
         foreach ($needReactionUsers as $user) {
             $resultResponseble = NotificationResponsibleTable::add([
                 'NOTIFICATION_ID' => $id,
@@ -234,7 +237,7 @@ trait SocialnetworkHandlers
             }
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим к ней соцлог, в рамках одного соц лога может быть много комментариев
         $result = NotificationBindingTable::add([
             'NOTIFICATION_ID' => $id,
             'ENTITY_TYPE' => NotificationBindingTable::SOC_LOG,
@@ -248,7 +251,7 @@ trait SocialnetworkHandlers
             return;
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим комментарий
         $result = NotificationBindingTable::add([
             'NOTIFICATION_ID' => $id,
             'ENTITY_TYPE' => NotificationBindingTable::SOC_LOG_COMMENT,
@@ -261,40 +264,40 @@ trait SocialnetworkHandlers
         }
 
         $connecton->commitTransaction();
-        //пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //шлём пулл что количество изменилось
         static::sendPull([$to]);
     }
 
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ OnBeforeSocNetLogDelete пїЅпїЅпїЅпїЅпїЅпїЅ socialnetwork
+    // Обработчик события OnBeforeSocNetLogDelete модуля socialnetwork
     public static function OnBeforeSocNetLogDelete($logId)
     {
         static::clearLogCommentNotification((int) $logId);
     }
 
-    // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    // Перед удалением записи в живой ленте удалим все уведомления связанные с данной записью
     protected static function clearLogCommentNotification(int $logId)
     {
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        // Получим все комментарии связанные с данной записью
         $rows = Socialnetwork\LogCommentTable::query()
             ->addSelect('ID')
             ->where('LOG_ID', $logId)
             ->exec();
 
-        // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+        // Если комментариев нет то ничего делать не надо
         if (0 >= $rows->getSelectedRowsCount()) {
             return;
         }
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        // Откроем транзакцию
         $connecton = Socialnetwork\LogCommentTable::getEntity()->getConnection();
         $connecton->startTransaction();
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+        // Переберем все найденные комментарии и вручную вызовем обработчик удаления комментария к записи в живой ленте
         while ($row = $rows->fetch()) {
             static::onSocNetCommentDelete($row['ID']);
         }
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        // Закроем транзакцию
         $connecton->commitTransaction();
     }
 }

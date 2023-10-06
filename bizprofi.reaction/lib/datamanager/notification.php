@@ -51,6 +51,9 @@ class NotificationTable extends DataManager
             ]),
             new Fields\DatetimeField('DATE', [
                 'title' => 'DATE',
+            ]), 
+            new Fields\StringField('GARBAGE', [
+                'title' => 'GARBAGE',
             ]),
             (new Reference(
                 'BINDING',
@@ -69,7 +72,7 @@ class NotificationTable extends DataManager
 
     public static function onDelete(Entity\Event $event)
     {
-        // ïðè óäàëåíèè íàõîäèì ñèììåòðè÷íîå óâåäîìëåíèå è ïîìå÷àåì åãî ñðåàãèðîâàííûì
+        // Ð¿Ñ€Ð¸ ÑƒÐ´Ð°Ð»ÐµÐ½Ð¸Ð¸ Ð½Ð°Ñ…Ð¾Ð´Ð¸Ð¼ ÑÐ¸Ð¼Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡Ð½Ð¾Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð¼ÐµÑ‡Ð°ÐµÐ¼ ÐµÐ³Ð¾ ÑÑ€ÐµÐ°Ð³Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¼
         if ($row = static::getByPrimary($event->getParameter('primary'))->fetch()) {
             if ($row['DIRECTION'] == static::NEED_REACTION) {
                 $bindings = NotificationBindingTable::getList([
@@ -117,7 +120,7 @@ class NotificationTable extends DataManager
     }
 
     /**
-     * Âåðí¸ò êîëè÷åñòâî óâåäîìëåíèé ïî âñåì ñóùíîñòÿì äëÿ ïîëüçîâàòåëÿ, åñëè èõ íåò - áóäåò 0.
+     * Ð’ÐµÑ€Ð½Ñ‘Ñ‚ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ð¹ Ð¿Ð¾ Ð²ÑÐµÐ¼ ÑÑƒÑ‰Ð½Ð¾ÑÑ‚ÑÐ¼ Ð´Ð»Ñ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ, ÐµÑÐ»Ð¸ Ð¸Ñ… Ð½ÐµÑ‚ - Ð±ÑƒÐ´ÐµÑ‚ 0.
      *
      * @param array $users
      *
@@ -129,17 +132,22 @@ class NotificationTable extends DataManager
      */
     public static function getAllCounters(array $users) : array
     {
-        $rows = NotificationTable::query()
-            ->registerRuntimeField('COUNT', new Fields\ExpressionField('COUNT', 'COUNT(*)'))
-            ->setSelect([
-                'DIRECTION',
-                'TO_USER',
-                'ENTITY_TYPE' => 'BINDING.ENTITY_TYPE',
-                'COUNT',
-            ])
-            ->setGroup(['DIRECTION', 'TO_USER', 'ENTITY_TYPE'])
-            ->whereIn('TO_USER', $users)
-            ->exec();
+        $query = NotificationTable::query();
+        $query->registerRuntimeField('COUNT', new Fields\ExpressionField('COUNT', 'COUNT(*)'));
+        $query->setSelect([
+            'DIRECTION',
+            'TO_USER',
+            'ENTITY_TYPE' => 'BINDING.ENTITY_TYPE',
+            'COUNT',
+        ]);
+        $query->setGroup(['DIRECTION', 'TO_USER', 'ENTITY_TYPE']);
+        if ($_REQUEST['direction'] == 1) {
+            $query->whereNotNull('RESPONSIBLE.NOTIFICATION_ID');
+        }
+        $query->whereIn('TO_USER', $users);
+        $query->whereNull('GARBAGE');
+
+        $rows = $query->exec();
 
         $result = [];
         while ($row = $rows->fetch()) {
@@ -156,7 +164,7 @@ class NotificationTable extends DataManager
     }
 
     /**
-     * Íîðìàëèçóåò ñ÷¸ò÷èêè, ïåðåâîäèò çíà÷åíèÿ êîíñòàíò â ñèìâîëüíîå, åñëè êîëè÷åñòâî óâåäîìëåíèé îòñóòñòâóåò - ñòàâèò
+     * ÐÐ¾Ñ€Ð¼Ð°Ð»Ð¸Ð·ÑƒÐµÑ‚ ÑÑ‡Ñ‘Ñ‚Ñ‡Ð¸ÐºÐ¸, Ð¿ÐµÑ€ÐµÐ²Ð¾Ð´Ð¸Ñ‚ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚ Ð² ÑÐ¸Ð¼Ð²Ð¾Ð»ÑŒÐ½Ð¾Ðµ, ÐµÑÐ»Ð¸ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ð¹ Ð¾Ñ‚ÑÑƒÑ‚ÑÑ‚Ð²ÑƒÐµÑ‚ - ÑÑ‚Ð°Ð²Ð¸Ñ‚
      * 0.
      *
      * @param array $users
@@ -193,6 +201,7 @@ class NotificationTable extends DataManager
     /**
      * @param array $ids
      * @param bool  $sendPull
+     * @param array $notificationIds
      *
      * @throws \Bitrix\Main\ArgumentException
      * @throws \Bitrix\Main\LoaderException
@@ -201,36 +210,41 @@ class NotificationTable extends DataManager
      *
      * @return array
      */
-    public static function getCountByUserIds(array $ids, bool $sendPull = true): array
+    public static function getCountByUserIds(array $usersIds, bool $sendPull = true, $notificationIds = null): array
     {
-        $ids = array_filter(array_unique($ids));
+        $usersIds = array_filter(array_unique($usersIds));
 
-        if (!count($ids)) {
+        if (!count($usersIds)) {
             return [];
         }
 
-        $subQuery = NotificationBindingTable::query()
-            ->addSelect('NOTIFICATION_ID')
-            ->whereNotIn('ENTITY_TYPE', [
-                    NotificationBindingTable::SOC_LOG,
-                    NotificationBindingTable::TASK_ENTITY,
-                    NotificationBindingTable::CRM_ENTITY,
-                    NotificationBindingTable::POST_ENTITY,
-                ]
-            ); // îíè òîëüêî äëÿ ïðèâÿçîê
+        $subQuery = '';
+        if(isset($notificationIds)){
+            $subQuery = $notificationIds;
+        } else {
+            $subQuery = NotificationBindingTable::query()
+                ->addSelect('NOTIFICATION_ID')
+                ->whereNotIn('ENTITY_TYPE', [
+                        NotificationBindingTable::SOC_LOG,
+                        NotificationBindingTable::TASK_ENTITY,
+                        NotificationBindingTable::CRM_ENTITY,
+                        NotificationBindingTable::POST_ENTITY,
+                    ]
+                ); // Ð¾Ð½Ð¸ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð´Ð»Ñ Ð¿Ñ€Ð¸Ð²ÑÐ·Ð¾Ðº
 
-        if (12 === $entity) {
-            $subQuery->whereIn(
-                'ENTITY_TYPE',
-                [
-                    NotificationBindingTable::COMMENT_REPORT_ENTITY,
-                    NotificationBindingTable::MESSAGE_ENTITY,
-                    NotificationBindingTable::SOC_LOG_COMMENT,
-                    NotificationBindingTable::CRM_ENTITY_COMMENT,
-                ]
-            );
-        } elseif ($entity > 0) {
-            $subQuery->where('ENTITY_TYPE', $entity);
+            if (12 === $entity) {
+                $subQuery->whereIn(
+                    'ENTITY_TYPE',
+                    [
+                        NotificationBindingTable::COMMENT_REPORT_ENTITY,
+                        NotificationBindingTable::MESSAGE_ENTITY,
+                        NotificationBindingTable::SOC_LOG_COMMENT,
+                        NotificationBindingTable::CRM_ENTITY_COMMENT,
+                    ]
+                );
+            } elseif ($entity > 0) {
+                $subQuery->where('ENTITY_TYPE', $entity);
+            }
         }
 
         $query = static::query()
@@ -239,7 +253,9 @@ class NotificationTable extends DataManager
             ->addGroup('DIRECTION')
             ->whereNotNull('DIRECTION')
             ->wherein('ID', $subQuery)
-            ->whereIn('TO_USER', $ids);
+            ->whereIn('TO_USER', $usersIds)
+            ->whereNull('GARBAGE');
+      
 
         if (!Loader::includeModule('pull')) {
             $sendPull = false;
@@ -257,13 +273,13 @@ class NotificationTable extends DataManager
             }
         }
 
-        // Ïîëó÷èì êîëè÷åñòâî óâåäîìëåíèé îæèäàþùèõ ðåàêöèè áåç ðåàêöèè
+        // ÐŸÐ¾Ð»ÑƒÑ‡Ð¸Ð¼ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ð¹ Ð¾Ð¶Ð¸Ð´Ð°ÑŽÑ‰Ð¸Ñ… Ñ€ÐµÐ°ÐºÑ†Ð¸Ð¸ Ð±ÐµÐ· Ñ€ÐµÐ°ÐºÑ†Ð¸Ð¸
         $rows = static::query()
             ->registerRuntimeField('COUNT', new Fields\ExpressionField('COUNT', 'COUNT(*)'))
             ->setSelect(['COUNT', 'TO_USER'])
             ->where('DIRECTION', static::WAIT_REACTION)
             ->wherein('ID', $subQuery)
-            ->whereIn('TO_USER', $ids)
+            ->whereIn('TO_USER', $usersIds)
             ->whereNotNull('RESPONSIBLE.NOTIFICATION_ID')
             ->addGroup('DIRECTION')
             ->exec();
@@ -273,8 +289,9 @@ class NotificationTable extends DataManager
         }
 
         $userInfo = [];
-        $userCounters = static::getAllCounters($ids);
-        foreach ($ids as $id) {
+        $userCounters = static::getAllCounters($usersIds);
+
+        foreach ($usersIds as $id) {
             $userInfo[$id] = [
                 'id' => $id,
                 'countNeed' => $result[$id]['countNeed'] ?: 0,
@@ -284,6 +301,7 @@ class NotificationTable extends DataManager
             ];
 
             if ($sendPull) {
+
                 if(!empty($userCounters[$id][NotificationTable::WAIT_REACTION])){
                     $userCounters[$id][NotificationTable::WAIT_REACTION]['with_reaction'] = $result[$id]['countWait'] - $result[$id]['countWaitWithoutReaction'];
                     $userCounters[$id][NotificationTable::WAIT_REACTION]['without_reaction'] = $result[$id]['countWaitWithoutReaction'];
@@ -294,7 +312,7 @@ class NotificationTable extends DataManager
                     'command' => 'changeNotifyCount',
                     'params' => [
                         'countNeed' => $result[$id]['countNeed'] ?: 0,
-                        'countWait' => $result[$id]['countWait'] ?: 0,
+                        'countWait' => $result[$id]['countWaitWithoutReaction'] ?: 0,
                         'allCounters' => $userCounters[$id],
                     ],
                 ]);
@@ -469,14 +487,14 @@ class NotificationTable extends DataManager
         $connection->commitTransaction();
     }
 
-    // Óäàëÿåò âñå óâåäîìëåíèÿ îæèäàþùèå ðåàêöèè íà êîòîðûå áûëà ïîëó÷åíà ðåàêöèÿ äëÿ ïîëüçîâàòåëÿ
+    // Ð£Ð´Ð°Ð»ÑÐµÑ‚ Ð²ÑÐµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ Ð¾Ð¶Ð¸Ð´Ð°ÑŽÑ‰Ð¸Ðµ Ñ€ÐµÐ°ÐºÑ†Ð¸Ð¸ Ð½Ð° ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð±Ñ‹Ð»Ð° Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð° Ñ€ÐµÐ°ÐºÑ†Ð¸Ñ Ð´Ð»Ñ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ
     public static function deleteWaitReactionWithReaction(int $user)
     {
-        // Îòêðîåì òðàíçàêöèþ
+        // ÐžÑ‚ÐºÑ€Ð¾ÐµÐ¼ Ñ‚Ñ€Ð°Ð½Ð·Ð°ÐºÑ†Ð¸ÑŽ
         $connection = static::getEntity()->getConnection();
         $connection->startTransaction();
 
-        // Ïîëó÷èì âñå òàêèå óâåäîìëåíèÿ
+        // ÐŸÐ¾Ð»ÑƒÑ‡Ð¸Ð¼ Ð²ÑÐµ Ñ‚Ð°ÐºÐ¸Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ
         $notyCollection = static::query()
             ->setSelect(['ID'])
             ->where('DIRECTION', static::WAIT_REACTION)
@@ -484,11 +502,11 @@ class NotificationTable extends DataManager
             ->whereNull('RESPONSIBLE.NOTIFICATION_ID')
             ->fetchCollection();
 
-        // Ïåðåáåðåì ïîëó÷åííûå óâåäîìëåíèÿ è óäàëèì èõ
+        // ÐŸÐµÑ€ÐµÐ±ÐµÑ€ÐµÐ¼ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð½Ñ‹Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ Ð¸ ÑƒÐ´Ð°Ð»Ð¸Ð¼ Ð¸Ñ…
         foreach ($notyCollection as $noty) {
             $result = $noty->delete();
 
-            // Åñëè ÷òî-òî ïîøëî íå òàê îòêàòèì òðàíçàêöèþ, çàïèøåì îøèáêó è ïðåðâåì âûïîëíåíèå
+            // Ð•ÑÐ»Ð¸ Ñ‡Ñ‚Ð¾-Ñ‚Ð¾ Ð¿Ð¾ÑˆÐ»Ð¾ Ð½Ðµ Ñ‚Ð°Ðº Ð¾Ñ‚ÐºÐ°Ñ‚Ð¸Ð¼ Ñ‚Ñ€Ð°Ð½Ð·Ð°ÐºÑ†Ð¸ÑŽ, Ð·Ð°Ð¿Ð¸ÑˆÐµÐ¼ Ð¾ÑˆÐ¸Ð±ÐºÑƒ Ð¸ Ð¿Ñ€ÐµÑ€Ð²ÐµÐ¼ Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ðµ
             if (!$result->isSuccess()) {
                 $connection->rollbackTransaction();
                 AddMessage2Log($result->getErrorMessages());
@@ -497,18 +515,27 @@ class NotificationTable extends DataManager
             }
         }
 
-        // Çàêðîåì òðàíçàêöèþ
+        // Ð—Ð°ÐºÑ€Ð¾ÐµÐ¼ Ñ‚Ñ€Ð°Ð½Ð·Ð°ÐºÑ†Ð¸ÑŽ
         $connection->commitTransaction();
     }
 
-    // Óäàëÿåò âñå óâåäîìëåíèÿ îæèäàþùèå ðåàêöèè íà êîòîðûå íå áûëà ïîëó÷åíà ðåàêöèÿ äëÿ ïîëüçîâàòåëÿ
+    public static function setGarbageStatus(int $notificationId, $garbageStatus = 'Y')
+    {
+        $connection = static::getEntity()->getConnection();
+        $connection->startTransaction();
+        $sql = 'update '.self::getTableName().' set GARBAGE="'.$garbageStatus.'" where ID='.$notificationId;
+        $connection->query($sql);       
+        $connection->commitTransaction();
+    }
+
+    // Ð£Ð´Ð°Ð»ÑÐµÑ‚ Ð²ÑÐµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ Ð¾Ð¶Ð¸Ð´Ð°ÑŽÑ‰Ð¸Ðµ Ñ€ÐµÐ°ÐºÑ†Ð¸Ð¸ Ð½Ð° ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð½Ðµ Ð±Ñ‹Ð»Ð° Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð° Ñ€ÐµÐ°ÐºÑ†Ð¸Ñ Ð´Ð»Ñ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»Ñ
     public static function deleteWaitReactionWithoutReaction(int $user)
     {
-        // Îòêðîåì òðàíçàêöèþ
+        // ÐžÑ‚ÐºÑ€Ð¾ÐµÐ¼ Ñ‚Ñ€Ð°Ð½Ð·Ð°ÐºÑ†Ð¸ÑŽ
         $connection = static::getEntity()->getConnection();
         $connection->startTransaction();
 
-        // Ïîëó÷èì âñå òàêèå óâåäîìëåíèÿ
+        // ÐŸÐ¾Ð»ÑƒÑ‡Ð¸Ð¼ Ð²ÑÐµ Ñ‚Ð°ÐºÐ¸Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ
         $notyCollection = static::query()
             ->setSelect(['ID'])
             ->where('DIRECTION', static::WAIT_REACTION)
@@ -516,11 +543,11 @@ class NotificationTable extends DataManager
             ->whereNotNull('RESPONSIBLE.NOTIFICATION_ID')
             ->fetchCollection();
 
-        // Ïåðåáåðåì ïîëó÷åííûå óâåäîìëåíèÿ è óäàëèì èõ
+        // ÐŸÐµÑ€ÐµÐ±ÐµÑ€ÐµÐ¼ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð½Ñ‹Ðµ ÑƒÐ²ÐµÐ´Ð¾Ð¼Ð»ÐµÐ½Ð¸Ñ Ð¸ ÑƒÐ´Ð°Ð»Ð¸Ð¼ Ð¸Ñ…
         foreach ($notyCollection as $noty) {
             $result = $noty->delete();
 
-            // Åñëè ÷òî-òî ïîøëî íå òàê îòêàòèì òðàíçàêöèþ, çàïèøåì îøèáêó è ïðåðâåì âûïîëíåíèå
+            // Ð•ÑÐ»Ð¸ Ñ‡Ñ‚Ð¾-Ñ‚Ð¾ Ð¿Ð¾ÑˆÐ»Ð¾ Ð½Ðµ Ñ‚Ð°Ðº Ð¾Ñ‚ÐºÐ°Ñ‚Ð¸Ð¼ Ñ‚Ñ€Ð°Ð½Ð·Ð°ÐºÑ†Ð¸ÑŽ, Ð·Ð°Ð¿Ð¸ÑˆÐµÐ¼ Ð¾ÑˆÐ¸Ð±ÐºÑƒ Ð¸ Ð¿Ñ€ÐµÑ€Ð²ÐµÐ¼ Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ðµ
             if (!$result->isSuccess()) {
                 $connection->rollbackTransaction();
                 AddMessage2Log($result->getErrorMessages());
@@ -529,7 +556,7 @@ class NotificationTable extends DataManager
             }
         }
 
-        // Çàêðîåì òðàíçàêöèþ
+        // Ð—Ð°ÐºÑ€Ð¾ÐµÐ¼ Ñ‚Ñ€Ð°Ð½Ð·Ð°ÐºÑ†Ð¸ÑŽ
         $connection->commitTransaction();
     }
 }

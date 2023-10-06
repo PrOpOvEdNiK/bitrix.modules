@@ -12,34 +12,34 @@ use Bizprofi\Tools\Lang;
 
 trait BizprocHandlers
 {
-    // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    // При удалении задания бизнес процесса удалим все связанные уведомления
     public static function OnBpTaskDelete($id)
     {
-        // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        // Найдем все нотификации с которыми связано данное задание
         $rows = NotificationBindingTable::query()
             ->addSelect('*')
             ->where('ENTITY_TYPE', NotificationBindingTable::BP_TASK)
             ->where('ENTITY_ID', $id)
             ->exec();
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ-пїЅпїЅ
+        // Откроем транзакцию зачем-то
         $connection = NotificationTable::getEntity()->getConnection();
         $connection->startTransaction();
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        // Удалим все нотификации
         while ($task = $rows->fetchObject()) {
             NotificationTable::delete($task->getNotificationId());
         }
 
-        // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        // Раз открыли то надо бы закрыть
         $connection->commitTransaction();
     }
 
     public static function OnBpTaskUpdate($id, $fields)
     {
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 0 - пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, 1 - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, 2 - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, 3 - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ(пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)
+        //подразумевается что обновление задания бп происходит только при смене статуса
+        //статус меняется только когда все ответственные за задание среагировали
+        //статусы кстати 0 - в работе, 1 - подтверждено, 2 - отменено, 3 - вроде завершён(это не точно)
 
         if ($fields['STATUS']) {
             NotificationTable::clearEntityById($id, NotificationBindingTable::BP_TASK, NotificationTable::NEED_REACTION);
@@ -47,7 +47,7 @@ trait BizprocHandlers
         }
     }
 
-    //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    //задание можно делегировать на другого пользователя, нужно почистить всё у старого и создать для нового
     public static function OnBpTaskDelegate($taskId, $fromUserId, $toUserId)
     {
         NotificationTable::clearEntityByUser([$fromUserId], NotificationBindingTable::BP_TASK, $taskId, NotificationTable::NEED_REACTION);
@@ -65,7 +65,7 @@ trait BizprocHandlers
 
     public static function OnBpTaskMarkCompleted($id, $userId, $status)
     {
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //срабатывет когда ответственный за задание среагировал
         NotificationTable::clearEntityByUser([$userId], NotificationBindingTable::BP_TASK, $id, NotificationTable::NEED_REACTION);
         NotificationResponsibleTable::clearResponsible($id, NotificationBindingTable::BP_TASK, $userId);
     }
@@ -76,7 +76,7 @@ trait BizprocHandlers
             throw new \Exception('bizproc not install');
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ
+        //получим дату и создателя задания бп
         $objWorkFlow = WorkflowStateTable::wakeUpObject($fields['WORKFLOW_ID']);
         $objWorkFlow->fill(['STARTED_BY', 'STARTED']);
 
@@ -89,7 +89,7 @@ trait BizprocHandlers
         }
 
         foreach ($fields['USERS'] as $user) {
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //уведомление создателю
             static::sendBpEntityNoty(
                 $id,
                 $objWorkFlow->getStartedBy(),
@@ -99,7 +99,7 @@ trait BizprocHandlers
                 [ $user ]
             );
 
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+            //уведомление ответственнм за бп на текущем шаге
             static::sendBpEntityNoty(
                 $id,
                 $user,

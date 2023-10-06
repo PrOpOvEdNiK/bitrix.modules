@@ -94,7 +94,7 @@ do {
     // Перебор всех опций таба
     foreach ($arOptions['main'] as $row) {
         // Если у опции не 4 ключа значит это не поле ввода или выбора данных
-        if (4 !== count($row)) {
+        if (is_array($row) && 4 !== count($row)) {
             continue;
         }
 

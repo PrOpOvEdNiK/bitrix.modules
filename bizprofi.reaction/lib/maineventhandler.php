@@ -30,7 +30,7 @@ class MainEventHandler
         }
         return $filePath;
     }
-    
+
     public static function appendScriptsToPage()
     {
         if (\CSite::InDir('/pub/')) {
@@ -43,7 +43,7 @@ class MainEventHandler
 
         \CJSCore::Init(['jquery', 'popup', 'sidepanel']);
 
-        // Языковые фразы модуля реагирования
+        // РЇР·С‹РєРѕРІС‹Рµ С„СЂР°Р·С‹ РјРѕРґСѓР»СЏ СЂРµР°РіРёСЂРѕРІР°РЅРёСЏ
         $jsPhrases = Json::encode(
             [
                 'REACTION_NOTIFY_1' => Lang::render('4eee9e21f8aadc98a3e87932649c7947'),
@@ -124,13 +124,13 @@ class MainEventHandler
         ];
     }
 
-    // Обработчик обновления полей пользователя
+    // РћР±СЂР°Р±РѕС‚С‡РёРє РѕР±РЅРѕРІР»РµРЅРёСЏ РїРѕР»РµР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     public static function OnBeforeUserUpdate($fields)
     {
         static::moveReportNotificationOnChangeDepartment($fields);
     }
 
-    // При изменении отдела у сотрудника перенесем уведомления отчетов на нового руководителя
+    // РџСЂРё РёР·РјРµРЅРµРЅРёРё РѕС‚РґРµР»Р° Сѓ СЃРѕС‚СЂСѓРґРЅРёРєР° РїРµСЂРµРЅРµСЃРµРј СѓРІРµРґРѕРјР»РµРЅРёСЏ РѕС‚С‡РµС‚РѕРІ РЅР° РЅРѕРІРѕРіРѕ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ
     protected static function moveReportNotificationOnChangeDepartment($fields)
     {
         if (!($newManagerId = static::getUserManagerByFields($fields))) {
@@ -141,12 +141,12 @@ class MainEventHandler
             return;
         }
 
-        // Если руководители совпадают ничего делать не надо
+        // Р•СЃР»Рё СЂСѓРєРѕРІРѕРґРёС‚РµР»Рё СЃРѕРІРїР°РґР°СЋС‚ РЅРёС‡РµРіРѕ РґРµР»Р°С‚СЊ РЅРµ РЅР°РґРѕ
         if ($newManagerId === $oldManagerId) {
             return;
         }
 
-        // Получим все уведомления которые нужно перенести
+        // РџРѕР»СѓС‡РёРј РІСЃРµ СѓРІРµРґРѕРјР»РµРЅРёСЏ РєРѕС‚РѕСЂС‹Рµ РЅСѓР¶РЅРѕ РїРµСЂРµРЅРµСЃС‚Рё
         $rows = NotificationTable::query()
             ->addSelect('*')
             ->where(
@@ -174,7 +174,7 @@ class MainEventHandler
 
         $notificationIds = [];
 
-        // Перенесем уведомления на нового руководителя
+        // РџРµСЂРµРЅРµСЃРµРј СѓРІРµРґРѕРјР»РµРЅРёСЏ РЅР° РЅРѕРІРѕРіРѕ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ
         while ($notification = $rows->fetchObject()) {
             $notificationIds[] = $notification->getId();
 
@@ -240,23 +240,23 @@ class MainEventHandler
         NotificationTable::getCountByUserIds([$newManagerId, $oldManagerId, (int) $fields['ID']]);
     }
 
-    // Возвращает руководителя сотрудника по полям пользователя
+    // Р’РѕР·РІСЂР°С‰Р°РµС‚ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ СЃРѕС‚СЂСѓРґРЅРёРєР° РїРѕ РїРѕР»СЏРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     protected static function getUserManagerByFields(array $fields): int
     {
-        // Если сотрудник не состоит в отделах то ничего не делаем
+        // Р•СЃР»Рё СЃРѕС‚СЂСѓРґРЅРёРє РЅРµ СЃРѕСЃС‚РѕРёС‚ РІ РѕС‚РґРµР»Р°С… С‚Рѕ РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµРј
         $departments = $fields['UF_DEPARTMENT'];
         if (!is_array($departments) || 0 >= $departments) {
             return 0;
         }
 
-        // Получим руководителя сотрудника
+        // РџРѕР»СѓС‡РёРј СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ СЃРѕС‚СЂСѓРґРЅРёРєР°
         return static::getUserManagerByDepartments((int) $fields['ID'], $departments);
     }
 
-    // Возвращает руководителя сотрудника идентификатору пользователя
+    // Р’РѕР·РІСЂР°С‰Р°РµС‚ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ СЃРѕС‚СЂСѓРґРЅРёРєР° РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     protected static function getUserManager(int $userId): int
     {
-        // Получим актуальное значение полей пользователя
+        // РџРѕР»СѓС‡РёРј Р°РєС‚СѓР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїРѕР»РµР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         $row = UserTable::query()
             ->setSelect(['*', 'UF_DEPARTMENT'])
             ->where('ID', $userId)
@@ -268,34 +268,34 @@ class MainEventHandler
             return 0;
         }
 
-        // Если в актуальных полях сотрудника нет данных об отделах прервем выполнение
+        // Р•СЃР»Рё РІ Р°РєС‚СѓР°Р»СЊРЅС‹С… РїРѕР»СЏС… СЃРѕС‚СЂСѓРґРЅРёРєР° РЅРµС‚ РґР°РЅРЅС‹С… РѕР± РѕС‚РґРµР»Р°С… РїСЂРµСЂРІРµРј РІС‹РїРѕР»РЅРµРЅРёРµ
         $departments = $row['UF_DEPARTMENT'];
         if (!is_array($departments) || 0 >= $departments) {
             return 0;
         }
 
-        // Получим актуального руководителя сотрудника
+        // РџРѕР»СѓС‡РёРј Р°РєС‚СѓР°Р»СЊРЅРѕРіРѕ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ СЃРѕС‚СЂСѓРґРЅРёРєР°
         return  static::getUserManagerByDepartments($userId, $departments);
     }
 
-    // Возвращает руководителя сотрудника по отделам в которых тот состоит
+    // Р’РѕР·РІСЂР°С‰Р°РµС‚ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ СЃРѕС‚СЂСѓРґРЅРёРєР° РїРѕ РѕС‚РґРµР»Р°Рј РІ РєРѕС‚РѕСЂС‹С… С‚РѕС‚ СЃРѕСЃС‚РѕРёС‚
     protected static function getUserManagerByDepartments(int $userId, array $departments): int
     {
         if (!Loader::includeModule('intranet')) {
             return 0;
         }
 
-        // Получим данные о структуре компании
+        // РџРѕР»СѓС‡РёРј РґР°РЅРЅС‹Рµ Рѕ СЃС‚СЂСѓРєС‚СѓСЂРµ РєРѕРјРїР°РЅРёРё
         $structure = \CIntranetUtils::GetStructure();
         $data = $structure['DATA'];
 
-        // Пробежимся по отделам и сформируем массив руководителей
+        // РџСЂРѕР±РµР¶РёРјСЃСЏ РїРѕ РѕС‚РґРµР»Р°Рј Рё СЃС„РѕСЂРјРёСЂСѓРµРј РјР°СЃСЃРёРІ СЂСѓРєРѕРІРѕРґРёС‚РµР»РµР№
         $managers = [];
         foreach ($departments as $departmentId) {
-            // Сохраним данные отдела в переменную
+            // РЎРѕС…СЂР°РЅРёРј РґР°РЅРЅС‹Рµ РѕС‚РґРµР»Р° РІ РїРµСЂРµРјРµРЅРЅСѓСЋ
             $department = $data[$departmentId];
 
-            // Если в отделе нет руководителя или он не активен, запишем в переменную вышестоящий отдел в котором есть руководитель
+            // Р•СЃР»Рё РІ РѕС‚РґРµР»Рµ РЅРµС‚ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ РёР»Рё РѕРЅ РЅРµ Р°РєС‚РёРІРµРЅ, Р·Р°РїРёС€РµРј РІ РїРµСЂРµРјРµРЅРЅСѓСЋ РІС‹С€РµСЃС‚РѕСЏС‰РёР№ РѕС‚РґРµР» РІ РєРѕС‚РѕСЂРѕРј РµСЃС‚СЊ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЊ
             while (
                 (
                     0 >= (int) $department['UF_HEAD']
@@ -315,12 +315,12 @@ class MainEventHandler
             }
         }
 
-        // Если нет руководителей прервем выполнение
+        // Р•СЃР»Рё РЅРµС‚ СЂСѓРєРѕРІРѕРґРёС‚РµР»РµР№ РїСЂРµСЂРІРµРј РІС‹РїРѕР»РЅРµРЅРёРµ
         if (0 >= count($managers)) {
             return 0;
         }
 
-        // Вернем первого руководителя
+        // Р’РµСЂРЅРµРј РїРµСЂРІРѕРіРѕ СЂСѓРєРѕРІРѕРґРёС‚РµР»СЏ
         $manager = array_shift($managers);
 
         return (int) $manager;

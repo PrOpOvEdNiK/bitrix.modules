@@ -13,7 +13,7 @@ trait BlogPostHandlers
 {
     public static function OnPostUpdate($id, $fields)
     {
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+        //событие ещё срабатывает когда обновляются права
         if (!$fields['DETAIL_TEXT'] || !$fields['PATH']) {
             return;
         }
@@ -32,7 +32,7 @@ trait BlogPostHandlers
         $users = static::getUsersFromMessage($fields['DETAIL_TEXT']);
         $date = new DateTime($fields['DATE_PUBLISH']);
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        // очистим уведомления в этой сущности для отмеченных пользователей и автора
         NotificationTable::clearEntityByUser(
             array_merge($users, [$user]),
             NotificationBindingTable::POST_NOTIFY,
@@ -41,13 +41,13 @@ trait BlogPostHandlers
         );
 
         NotificationResponsibleTable::clearResponsible($id, NotificationBindingTable::POST_NOTIFY, $user);
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //никого не упомянули, выходим, ничего не создаем
         if (!count($users)) {
             return;
         }
 
         foreach ($users as $key => $userId) {
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //владельцу
             static::sendPostNotify(
                 $id,
                 $user,
@@ -57,7 +57,7 @@ trait BlogPostHandlers
                 [ $userId ]
             );
 
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //упомянутым пользователям
             static::sendPostNotify(
                 $id,
                 $userId,
@@ -70,7 +70,7 @@ trait BlogPostHandlers
 
     public static function OnPostDelete($id)
     {
-        //пїЅпїЅ id пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //по id комментария сонета найдём соответствующие записи нотификаций
         $notyCollection = NotificationTable::query()
             ->setSelect(['ID', 'TO_USER', 'FROM_USER'])
             ->where('BINDING.ENTITY_TYPE', NotificationBindingTable::POST_NOTIFY)
@@ -88,7 +88,7 @@ trait BlogPostHandlers
         $connection = NotificationTable::getEntity()->getConnection();
         $connection->startTransaction();
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+        //удаляем в цикле
         $users = [];
         foreach ($notyCollection as $noty) {
             $users[] = $noty->getToUser();
@@ -117,7 +117,7 @@ trait BlogPostHandlers
     ) {
         $connecton = NotificationTable::getEntity()->getConnection();
         $connecton->startTransaction();
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        //добавляем основную запись
         $result = NotificationTable::add([
             'TO_USER' => $to,
             'FROM_USER' => $from,
@@ -134,7 +134,7 @@ trait BlogPostHandlers
 
         $id = $result->getId();
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим отмеченных для статусов
         foreach ($needReactionUsers as $user) {
             $resultResponseble = NotificationResponsibleTable::add([
                 'NOTIFICATION_ID' => $id,
@@ -151,7 +151,7 @@ trait BlogPostHandlers
             }
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим комментарий
         $result = NotificationBindingTable::add([
             'NOTIFICATION_ID' => $id,
             'ENTITY_TYPE' => NotificationBindingTable::POST_NOTIFY,
@@ -164,7 +164,7 @@ trait BlogPostHandlers
         }
 
         $connecton->commitTransaction();
-        //пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //шлём пулл что количество изменилось
         static::sendPull([$to]);
     }
 }

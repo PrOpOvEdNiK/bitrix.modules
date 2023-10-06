@@ -17,7 +17,7 @@ trait BlogCommentHandlers
         $user = $fields['AUTHOR_ID'];
         $blogId = $fields['POST_ID'];
 
-        // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+        // Если взаимодействие с блогом идей ничего делать не надо
         if (static::isIdeaBlog((int) $fields['BLOG_ID'])) {
             return;
         }
@@ -25,7 +25,7 @@ trait BlogCommentHandlers
         $users = static::getUsersFromMessage($fields['POST_TEXT']);
         $date = new DateTime($fields['DATE_CREATE']);
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        // очистим уведомления в этой сущности для отмеченных пользователей и автора
         NotificationTable::clearEntityByUser(
             array_merge($users, [$user]),
             NotificationBindingTable::POST_ENTITY,
@@ -33,7 +33,7 @@ trait BlogCommentHandlers
             NotificationTable::NEED_REACTION
         );
 
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        // очистим уведомления у родительской записи
         NotificationTable::clearEntityByUser(
             array_merge($users, [$user]),
             NotificationBindingTable::POST_NOTIFY,
@@ -43,13 +43,13 @@ trait BlogCommentHandlers
 
         NotificationResponsibleTable::clearResponsible($blogId, NotificationBindingTable::POST_ENTITY, $user);
         NotificationResponsibleTable::clearResponsible($blogId, NotificationBindingTable::POST_NOTIFY, $user);
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //никого не упомянули, выходим, ничего не создаем
         if (!count($users)) {
             return;
         }
 
         foreach ($users as $key => $userId) {
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //владельцу комментария
             static::sendBlogCommentNotify(
                 $id,
                 $blogId,
@@ -60,7 +60,7 @@ trait BlogCommentHandlers
                 [ $userId ]
             );
 
-            //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            //упомянутым пользователям
             static::sendBlogCommentNotify(
                 $id,
                 $blogId,
@@ -74,7 +74,7 @@ trait BlogCommentHandlers
 
     public static function OnBlogUpdate($id, $fields)
     {
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //событие ещё срабатывает когда обновляются права у комментария
         if (!$fields['POST_TEXT'] || !$fields['PATH']) {
             return;
         }
@@ -89,7 +89,7 @@ trait BlogCommentHandlers
 
     public static function OnBlogDelete($id)
     {
-        //пїЅпїЅ id пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //по id комментария сонета найдём соответствующие записи нотификаций
         $notyCollection = NotificationTable::query()
             ->setSelect(['ID', 'TO_USER', 'FROM_USER'])
             ->where('BINDING.ENTITY_TYPE', NotificationBindingTable::BLOG_COMMENT)
@@ -107,7 +107,7 @@ trait BlogCommentHandlers
         $connection = NotificationTable::getEntity()->getConnection();
         $connection->startTransaction();
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+        //удаляем в цикле
         $users = [];
         foreach ($notyCollection as $noty) {
             $users[] = $noty->getToUser();
@@ -136,7 +136,7 @@ trait BlogCommentHandlers
     ) {
         $connecton = NotificationTable::getEntity()->getConnection();
         $connecton->startTransaction();
-        //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+        //добавляем основную запись
         $result = NotificationTable::add([
             'TO_USER' => $to,
             'FROM_USER' => $from,
@@ -153,7 +153,7 @@ trait BlogCommentHandlers
 
         $id = $result->getId();
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим отмеченных для статусов
         foreach ($needReactionUsers as $user) {
             $resultResponseble = NotificationResponsibleTable::add([
                 'NOTIFICATION_ID' => $id,
@@ -170,7 +170,7 @@ trait BlogCommentHandlers
             }
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим к ней блог, в рамках одного блога может быть много комментариев
         $result = NotificationBindingTable::add([
             'NOTIFICATION_ID' => $id,
             'ENTITY_TYPE' => NotificationBindingTable::POST_ENTITY,
@@ -184,7 +184,7 @@ trait BlogCommentHandlers
             return;
         }
 
-        //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //биндим комментарий
         $result = NotificationBindingTable::add([
             'NOTIFICATION_ID' => $id,
             'ENTITY_TYPE' => NotificationBindingTable::BLOG_COMMENT,
@@ -197,24 +197,24 @@ trait BlogCommentHandlers
         }
 
         $connecton->commitTransaction();
-        //пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        //шлём пулл что количество изменилось
         static::sendPull([$to]);
     }
 
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+    // Проверяет является ли блог блогом идей
     protected static function isIdeaBlog(int $blogId): bool
     {
-        // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ false
+        // Если модуль блога не подключен вернем false
         if (!Loader::includeModule('blog')) {
             return false;
         }
 
-        // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ false
+        // Если не корректный идентификатор блога вернем false
         if (0 >= $blogId) {
             return false;
         }
 
-        // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ false
+        // Если не удалось получить информацию по блогу идей вернем false
         if (!($ideaBlog = \CBlog::GetByUrl('idea_s1'))) {
             return false;
         }

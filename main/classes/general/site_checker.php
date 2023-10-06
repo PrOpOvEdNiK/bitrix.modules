@@ -148,6 +148,13 @@ class CSiteCheckerTest
 			array('check_mysql_table_structure' => GetMessage('SC_T_STRUCTURE')),
 		);
 
+		$arGroupName[64] = GetMessage('SC_GR_MYSQL');
+		$arTestGroup[64] = array(
+			array('check_pgsql_version' => GetMessage('SC_T_PGSQL_VER')),
+			array('check_mysql_time' => GetMessage('SC_T_TIME')),
+			array('check_pgsql_connection_charset' => GetMessage('SC_CONNECTION_CHARSET')),
+		);
+
 		if ($this->fix_mode)
 		{
 			switch ($this->fix_mode)
@@ -197,7 +204,15 @@ class CSiteCheckerTest
 			else
 			{
 				$profile |= 16;
-				$profile |= 32;
+				switch (\Bitrix\Main\Application::getConnection()->getType())
+				{
+					case 'mysql':
+						$profile |= 32;
+						break;
+					case 'pgsql':
+						$profile |= 64;
+						break;
+				}
 			}
 			$this->arTest = array();
 			$step0 = $step;
@@ -1963,6 +1978,76 @@ class CSiteCheckerTest
 			return true;
 		}
 		return $this->Result(null, GetMessage("MAIN_AGENTS_HITS"));
+	}
+
+	function check_pgsql_version()
+	{
+		$connection = \Bitrix\Main\Application::getConnection();
+
+		$PgSql_vercheck_min = '11.0.0';
+
+		$ver = $connection->getVersion()[0];
+		if (version_compare($ver, $PgSql_vercheck_min, '<'))
+		{
+			return $this->Result(false, GetMessage('SC_PGSQL_ERR_VER', [
+				'#CUR#' => $ver,
+				'#REQ#' => $PgSql_vercheck_min,
+			]));
+		}
+
+		return true;
+	}
+
+	function check_pgsql_connection_charset()
+	{
+		$connection = \Bitrix\Main\Application::getConnection();
+		$strError = '';
+
+		if ($this->arTestVars['check_mbstring_fail'])
+		{
+			return $this->Result(null, GetMessage('SC_MBSTRING_NA'));
+		}
+
+		$res = $connection->query('SHOW client_encoding');
+		$f = $res->fetch();
+		$character_set_connection = $f['CLIENT_ENCODING'];
+
+		$bAllIn1251 = true;
+		$res1 = $connection->query('SELECT C.CHARSET FROM b_lang L, b_culture C WHERE C.ID=L.CULTURE_ID AND L.ACTIVE=\'Y\''); // for 'no kernel mode'
+		while ($f1 = $res1->fetch())
+		{
+			$bAllIn1251 = $bAllIn1251 && trim(strtolower($f1['CHARSET'])) == 'windows-1251';
+		}
+
+		if (defined('BX_UTF') && BX_UTF === true)
+		{
+			if ($character_set_connection != 'UTF8')
+			{
+				$strError = GetMessage('SC_CONNECTION_CHARSET_WRONG', ['#VAL#' => 'utf8', '#VAL1#' => $character_set_connection]);
+			}
+		}
+		else
+		{
+			if ($bAllIn1251 && $character_set_connection != 'WIN1251')
+			{
+				$strError = GetMessage('SC_CONNECTION_CHARSET_WRONG', ['#VAL#' => 'cp1251', '#VAL1#' => $character_set_connection]);
+			}
+			elseif ($character_set_connection == 'UTF8')
+			{
+				$strError = GetMessage('SC_CONNECTION_CHARSET_WRONG_NOT_UTF', ['#VAL#' => $character_set_connection]);
+			}
+		}
+
+		echo 'character_set_connection=' . $character_set_connection;
+
+		if (!$strError)
+		{
+			return true;
+		}
+
+		$this->arTestVars['check_connection_charset_fail'] = true;
+
+		return $this->Result(false, $strError);
 	}
 
 	##############################

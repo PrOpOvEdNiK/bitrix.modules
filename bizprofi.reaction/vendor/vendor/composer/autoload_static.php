@@ -4,10 +4,9 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd
+class ComposerStaticInit28a4fd90d52d0157a47e1e46a96cdc14
 {
     public static $files = array (
-        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '93d17691ed1face31c1932b7b48dfc0a' => __DIR__ . '/..' . '/magnifico/bitrix-migration/bootstrap.php',
     );
@@ -15,7 +14,6 @@ class ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd
     public static $prefixLengthsPsr4 = array (
         'S' => 
         array (
-            'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Component\\Debug\\' => 24,
             'Symfony\\Component\\Console\\' => 26,
@@ -36,10 +34,6 @@ class ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd
     );
 
     public static $prefixDirsPsr4 = array (
-        'Symfony\\Polyfill\\Php80\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
-        ),
         'Symfony\\Polyfill\\Mbstring\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
@@ -70,18 +64,11 @@ class ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd
         ),
     );
 
-    public static $classMap = array (
-        'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
-        'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
-        'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
-    );
-
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit85b74ff2827124935fbbcf38f7e6fdfd::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit28a4fd90d52d0157a47e1e46a96cdc14::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit28a4fd90d52d0157a47e1e46a96cdc14::$prefixDirsPsr4;
 
         }, null, ClassLoader::class);
     }
