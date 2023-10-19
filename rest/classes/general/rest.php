@@ -10,6 +10,7 @@
 
 use Bitrix\Bitrix24\Feature;
 use Bitrix\Main\ArgumentNullException;
+use Bitrix\Main;
 use Bitrix\Main\ModuleManager;
 use Bitrix\Rest\Engine\Access\LoadLimiter;
 use Bitrix\Rest\RestException;
@@ -153,6 +154,8 @@ class CRestServer
 
 			if(!is_a($this->error, \Bitrix\Rest\RestException::class))
 			{
+				Main\Application::getInstance()->getExceptionHandler()->writeToLog($e);
+
 				$this->error = RestException::initFromException($this->error);
 			}
 

@@ -1135,6 +1135,10 @@ class User extends \IRestService
 				{
 					$filterType = '';
 				}
+				elseif ($filterType === '' && in_array($code, ['USER_TYPE', 'ACTIVE'], true))
+				{
+					$filterType = '=';
+				}
 
 				$filter[$filterType . $code] = static::prepareUserValue($code, $value);
 			}

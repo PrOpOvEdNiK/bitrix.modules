@@ -655,7 +655,7 @@ class Helper
 			}
 		}
 
-		if (function_exists("IsModuleInstalled"))
+		if (defined("BX_STARTED"))
 		{
 			$arOptions["COMPRESS"] = false;
 			$arOptions["STORE_PASSWORD"] = \COption::GetOptionString("main", "store_password", "Y");
