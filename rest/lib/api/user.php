@@ -1061,7 +1061,7 @@ class User extends \IRestService
 	{
 		switch ($code):
 			case 'ID':
-				if (is_array($value))
+				if (is_array($value) && !empty($value))
 				{
 					$value = array_map('intval', $value);
 				}
