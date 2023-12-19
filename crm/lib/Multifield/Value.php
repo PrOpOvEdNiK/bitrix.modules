@@ -124,4 +124,12 @@ final class Value implements Arrayable, \JsonSerializable
 			'valueExtra' => $this->getValueExtra(),
 		];
 	}
+
+	public function __clone(): void
+	{
+		if (is_object($this->valueExtra))
+		{
+			$this->valueExtra = clone $this->valueExtra;
+		}
+	}
 }

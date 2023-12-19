@@ -313,6 +313,19 @@ class Utils extends EdnaUtils
 		$filteredTemplates = [];
 		foreach ($templatesData as $template)
 		{
+			if (!is_array($template))
+			{
+				$exception = new \Bitrix\Main\SystemException(
+					'Incorrect response from the Edna service: ' . var_export($templatesData, true)
+				);
+
+				\Bitrix\Main\Application::getInstance()->getExceptionHandler()->writeToLog($exception);
+
+				return (new Result())->addError(
+					new Error('Incorrect response from the Edna service.', 400, $templatesData)
+				);
+			}
+
 			if (!$this->checkApprovedStatus($template))
 			{
 				continue;

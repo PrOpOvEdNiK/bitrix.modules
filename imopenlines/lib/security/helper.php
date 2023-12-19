@@ -141,11 +141,13 @@ class Helper
 		return $permissions->canModifySettings();
 	}
 
-	public static function installRolesAgent()
+	public static function installRolesAgent(): string
 	{
 		$checkCursor = \Bitrix\ImOpenlines\Model\RoleTable::getList(array('limit' => 1));
-		if($checkCursor->fetch())
+		if ($checkCursor->fetch())
+		{
 			return "";
+		}
 
 		$defaultRoles = array(
 			'ADMIN' => array(

@@ -438,16 +438,9 @@ final class FieldRepository
 		;
 	}
 
-	/**
-	 * @deprecated This field is not used anymore
-	 *
-	 * @param string $fieldName
-	 * @return ScalarField
-	 */
-	public function getExchRate(string $fieldName = 'EXCH_RATE'): ScalarField
+	public function getExchRate(string $fieldName = Item::FIELD_NAME_EXCH_RATE): ScalarField
 	{
 		return
-			/** @deprecated */
 			(new FloatField($fieldName))
 				->configureScale(4)
 				->configureDefaultValue(1)

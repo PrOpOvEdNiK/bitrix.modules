@@ -209,18 +209,22 @@ class CrmContacts extends CrmEntity
 
 		$filter = [
 			'CHECK_PERMISSIONS' => 'Y',
-			'@CATEGORY_ID' => 0,
 		];
 		$order = [];
 		$select = $this->getSearchSelect();
 
 		if (!empty($entitiesIdList))
 		{
+			if (empty($selectedEntitiesIdList))
+			{
+				$filter['@CATEGORY_ID'] = 0;
+			}
 			$filter['ID'] = $entitiesIdList;
 			$navParams = false;
 		}
 		else
 		{
+			$filter['@CATEGORY_ID'] = 0;
 			$order = ['ID' => 'DESC'];
 			$navParams = [ 'nTopCount' => 10 ];
 		}
@@ -269,18 +273,19 @@ class CrmContacts extends CrmEntity
 			}
 		}
 
+		$entitiesListKeys = array_keys($entitiesList);
 		$entitiesList = static::processMultiFields($entitiesList, $entityOptions);
 
 		if (empty($lastEntitiesIdList))
 		{
-			$result["ITEMS_LAST"] = array_keys($entitiesList);
+			$result["ITEMS_LAST"] = $entitiesListKeys;
 		}
 
 		$result['ITEMS'] = $entitiesList;
 
 		if (!empty($selectedItems[$entityType]))
 		{
-			$hiddenItemsList = array_diff($selectedItems[$entityType], array_keys($entitiesList));
+			$hiddenItemsList = array_diff($selectedItems[$entityType], $entitiesListKeys);
 			$hiddenItemsList = array_map(
 				function($code) use ($prefix)
 				{
@@ -311,19 +316,11 @@ class CrmContacts extends CrmEntity
 					$filter,
 					false,
 					false,
-					$select
+					['ID']
 				);
 				while($entityFields = $res->fetch())
 				{
-					$hiddenEntitiesList[$prefix . $entityFields['ID']] =
-						static::prepareEntity($entityFields, $entityOptions)
-					;
-				}
-
-				if (!empty($hiddenEntitiesList))
-				{
-					$hiddenEntitiesList = static::processMultiFields($hiddenEntitiesList, $entityOptions);
-					$result['ITEMS'] = array_merge($result['ITEMS'], $hiddenEntitiesList);
+					$result['ITEMS_HIDDEN'][] = $prefix . $entityFields['ID'];
 				}
 			}
 		}

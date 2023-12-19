@@ -62,6 +62,43 @@ class Session
 		return Im::addMessage($messageFields);
 	}
 
+	public static function sendMessageStartSessionByMultiDialogToParentChat(int $chatIdParent, int $sessionId, int $chatIdChild): ?bool
+	{
+		$messageFields = [
+			'SYSTEM' => 'Y',
+			'TO_CHAT_ID' => $chatIdParent,
+			'MESSAGE' => Loc::getMessage('IMOL_MESSAGE_SESSION_START_BY_MULTI_DIALOG_SOURCE', [
+				'#LINK#' => ImOpenLines\Chat::getUrlImChat($chatIdChild, $sessionId)
+			]),
+			'PARAMS' => [
+				'CLASS' => 'bx-messenger-content-item-ol-start'
+			]
+		];
+
+		return Im::addMessage($messageFields);
+	}
+
+	/**
+	 * @param $chatId
+	 * @param $sessionIdParent
+	 * @return bool|int
+	 */
+	public static function sendMessageNewMultidialog($chatId, $parentChatId, $parentSessionId)
+	{
+		$messageFields = [
+			'SYSTEM' => 'Y',
+			'TO_CHAT_ID' => $chatId,
+			'MESSAGE' => Loc::getMessage('IMOL_MESSAGE_SESSION_START_BY_MESSAGE_MULTI', [
+				'#LINK#' => ImOpenLines\Chat::getUrlImChat($parentChatId, $parentSessionId)
+			]),
+			'PARAMS' => [
+				'CLASS' => 'bx-messenger-content-item-ol-start'
+			]
+		];
+
+		return Im::addMessage($messageFields);
+	}
+
 	/**
 	 * @param $chatId
 	 * @param $sessionId

@@ -1,6 +1,7 @@
 <?php
 namespace Bitrix\BIConnector;
 
+use Bitrix\Intranet\Settings\Tools\ToolsManager;
 use Bitrix\Main\Application;
 
 class Manager
@@ -436,7 +437,13 @@ class Manager
 		if ($USER->canDoOperation('biconnector_key_view'))
 		{
 			$licence = Application::getInstance()->getLicense();
-			if ($licence->getRegion() === 'ru' || $licence->getRegion() === 'by')
+			if (
+				($licence->getRegion() === 'ru' || $licence->getRegion() === 'by')
+				&& (
+					!class_exists('Bitrix\Intranet\Settings\Tools\ToolsManager')
+					|| ToolsManager::getInstance()->checkAvailabilityByMenuId('crm_bi_templates')
+				)
+			)
 			{
 				$items[] = [
 					'id' => 'crm_bi_templates',
@@ -449,16 +456,28 @@ class Manager
 				];
 			}
 
-			$items[] = [
-				'id' => 'crm_microsoft_power_bi',
-				'external' => false,
-				'component_name' => 'bitrix:biconnector.microsoftpbi',
-				'component_parameters' => [
-					'SHOW_TITLE' => 'N',
-				],
-			];
+			if (
+				!class_exists('Bitrix\Intranet\Settings\Tools\ToolsManager')
+				|| ToolsManager::getInstance()->checkAvailabilityByMenuId('crm_microsoft_power_bi')
+			)
+			{
+				$items[] = [
+					'id' => 'crm_microsoft_power_bi',
+					'external' => false,
+					'component_name' => 'bitrix:biconnector.microsoftpbi',
+					'component_parameters' => [
+						'SHOW_TITLE' => 'N',
+					],
+				];
+			}
 
-			if ($licence->getRegion() === 'ru' || $licence->getRegion() === 'kz')
+			if (
+				($licence->getRegion() === 'ru' || $licence->getRegion() === 'kz')
+				&& (
+					!class_exists('Bitrix\Intranet\Settings\Tools\ToolsManager')
+					|| ToolsManager::getInstance()->checkAvailabilityByMenuId('crm_yandex_datalens')
+				)
+			)
 			{
 				$items[] = [
 					'id' => 'crm_yandex_datalens',
@@ -470,14 +489,20 @@ class Manager
 				];
 			}
 
-			$items[] = [
-				'id' => 'crm_google_datastudio',
-				'external' => false,
-				'component_name' => 'bitrix:biconnector.googleds',
-				'component_parameters' => [
-					'SHOW_TITLE' => 'N',
-				],
-			];
+			if (
+				!class_exists('Bitrix\Intranet\Settings\Tools\ToolsManager')
+				|| ToolsManager::getInstance()->checkAvailabilityByMenuId('crm_google_datastudio')
+			)
+			{
+				$items[] = [
+					'id' => 'crm_google_datastudio',
+					'external' => false,
+					'component_name' => 'bitrix:biconnector.googleds',
+					'component_parameters' => [
+						'SHOW_TITLE' => 'N',
+					],
+				];
+			}
 		}
 
 		foreach ($this->getCurrentUserDashboardList() as $dashboard)

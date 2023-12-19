@@ -60,11 +60,7 @@ class OpenLineManager
 		'telegram',
 		'imessage',
 	];
-
-	/**
-	 * Check if current manager enabled.
-	 * @return bool
-	 */
+	
 	public static function isEnabled()
 	{
 		if (self::$isEnabled === null)
@@ -161,7 +157,7 @@ class OpenLineManager
 
 	public static function getLineConnectorType(?string $code): ?string
 	{
-		if (!isset($code))
+		if (!isset($code) || !self::isEnabled())
 		{
 			return null;
 		}
@@ -198,12 +194,12 @@ class OpenLineManager
 
 	public static function getOpenLineTitle(string $value): ?string
 	{
-		return OpenLineManager::getLineTitle(mb_substr($value, 5));
+		return self::getLineTitle(mb_substr($value, 5));
 	}
 
 	public static function getChatTitle(?string $code): ?string
 	{
-		if (!isset($code))
+		if (!isset($code) || !self::isEnabled())
 		{
 			return null;
 		}
@@ -216,7 +212,7 @@ class OpenLineManager
 
 	public static function getSessionData(?int $sessionId): array
 	{
-		if (!isset($sessionId))
+		if (!isset($sessionId) || !self::isEnabled())
 		{
 			return [];
 		}

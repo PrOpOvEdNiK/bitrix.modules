@@ -8,7 +8,8 @@ use Bitrix\Iblock;
 
 class CIBlockPropertyDateTime
 {
-	public const USER_TYPE = 'DateTime';
+	/** @deprecated */
+	public const USER_TYPE = Iblock\PropertyTable::USER_TYPE_DATETIME;
 
 	public const FORMAT_FULL = 'Y-m-d H:i:s';
 	public const FORMAT_SHORT = 'Y-m-d';
@@ -16,23 +17,23 @@ class CIBlockPropertyDateTime
 	public static function GetUserTypeDescription()
 	{
 		return [
-			"PROPERTY_TYPE" => Iblock\PropertyTable::TYPE_STRING,
-			"USER_TYPE" => self::USER_TYPE,
-			"DESCRIPTION" => Loc::getMessage("IBLOCK_PROP_DATETIME_DESC"),
+			'PROPERTY_TYPE' => Iblock\PropertyTable::TYPE_STRING,
+			'USER_TYPE' => Iblock\PropertyTable::USER_TYPE_DATETIME,
+			'DESCRIPTION' => Loc::getMessage('IBLOCK_PROP_DATETIME_DESC'),
 			//optional handlers
-			"GetPublicViewHTML" => [__CLASS__, "GetPublicViewHTML"],
-			"GetPublicEditHTML" => [__CLASS__, "GetPublicEditHTML"],
-			"GetPublicEditHTMLMulty" => [__CLASS__, "GetPublicEditHTMLMulty"],
-			"GetAdminListViewHTML" => [__CLASS__, "GetAdminListViewHTML"],
-			"GetPropertyFieldHtml" => [__CLASS__, "GetPropertyFieldHtml"],
-			"CheckFields" => [__CLASS__, "CheckFields"],
-			"ConvertToDB" => [__CLASS__, "ConvertToDB"],
-			"ConvertFromDB" => [__CLASS__, "ConvertFromDB"],
-			"GetSettingsHTML" => [__CLASS__, "GetSettingsHTML"],
-			"GetAdminFilterHTML" => [__CLASS__, "GetAdminFilterHTML"],
-			"GetPublicFilterHTML" => [__CLASS__, "GetPublicFilterHTML"],
-			"AddFilterFields" => [__CLASS__, "AddFilterFields"],
-			"GetUIFilterProperty" => [__CLASS__, "GetUIFilterProperty"],
+			'GetPublicViewHTML' => [__CLASS__, 'GetPublicViewHTML'],
+			'GetPublicEditHTML' => [__CLASS__, 'GetPublicEditHTML'],
+			'GetPublicEditHTMLMulty' => [__CLASS__, 'GetPublicEditHTMLMulty'],
+			'GetAdminListViewHTML' => [__CLASS__, 'GetAdminListViewHTML'],
+			'GetPropertyFieldHtml' => [__CLASS__, 'GetPropertyFieldHtml'],
+			'CheckFields' => [__CLASS__, 'CheckFields'],
+			'ConvertToDB' => [__CLASS__, 'ConvertToDB'],
+			'ConvertFromDB' => [__CLASS__, 'ConvertFromDB'],
+			'GetSettingsHTML' => [__CLASS__, 'GetSettingsHTML'],
+			'GetAdminFilterHTML' => [__CLASS__, 'GetAdminFilterHTML'],
+			'GetPublicFilterHTML' => [__CLASS__, 'GetPublicFilterHTML'],
+			'AddFilterFields' => [__CLASS__, 'AddFilterFields'],
+			'GetUIFilterProperty' => [__CLASS__, 'GetUIFilterProperty'],
 			'GetUIEntityEditorProperty' => [__CLASS__, 'GetUIEntityEditorProperty'],
 		];
 	}

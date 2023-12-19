@@ -57,8 +57,8 @@ class ConfigurableRestApp extends Base
 			[
 				'NAME' => Loc::getMessage('CRM_ACTIVITY_PROVIDER_CONFIGURABLE_REST_APP_NAME'),
 				'PROVIDER_ID' => self::getId(),
-				'PROVIDER_TYPE_ID' => self::PROVIDER_TYPE_ID_DEFAULT
-			]
+				'PROVIDER_TYPE_ID' => self::PROVIDER_TYPE_ID_DEFAULT,
+			],
 		];
 	}
 

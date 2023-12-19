@@ -620,26 +620,35 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	 */
 	public function download($url, $filePath)
 	{
-		$dir = IO\Path::getDirectory($filePath);
-		IO\Directory::createDirectory($dir);
-
 		$result = $this->query(Http\Method::GET, $url);
 
 		if ($result && ($status = $this->getStatus()) >= 200 && $status < 300)
 		{
-			$file = new IO\File($filePath);
-			$handler = $file->open('w+');
-
-			$this->setOutputStream($handler);
-
-			$this->getResult();
-
-			$file->close();
+			$this->saveFile($filePath);
 
 			return true;
 		}
 
 		return false;
+	}
+
+	/**
+	 * Saves a downloaded file.
+	 *
+	 * @param string $filePath Absolute file path.
+	 */
+	public function saveFile($filePath)
+	{
+		$dir = IO\Path::getDirectory($filePath);
+		IO\Directory::createDirectory($dir);
+
+		$file = new IO\File($filePath);
+		$handler = $file->open('w+');
+
+		$this->setOutputStream($handler);
+		$this->getResult();
+
+		$file->close();
 	}
 
 	/**
@@ -919,7 +928,9 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 
 		$queue = $this->createQueue(false);
 
-		$promise = $this->createPromise($this->request, $queue);
+		$handler = $this->createHandler($this->request);
+
+		$promise = $this->createPromise($handler, $queue);
 
 		$queue->add($promise);
 
@@ -947,7 +958,9 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 			$this->queue = $this->createQueue();
 		}
 
-		$promise = $this->createPromise($this->request, $this->queue);
+		$handler = $this->createHandler($this->request, true);
+
+		$promise = $this->createPromise($handler, $this->queue);
 
 		$this->queue->add($promise);
 
@@ -956,9 +969,10 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 
 	/**
 	 * @param RequestInterface $request
+	 * @param bool $async
 	 * @return Http\Curl\Handler | Http\Socket\Handler
 	 */
-	protected function createHandler(RequestInterface $request)
+	protected function createHandler(RequestInterface $request, bool $async = false)
 	{
 		if ($this->sslVerify === false)
 		{
@@ -976,6 +990,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 			'contextOptions' => $this->contextOptions,
 			'socketTimeout' => $this->socketTimeout,
 			'streamTimeout' => $this->streamTimeout,
+			'async' => $async,
 			'curlLogFile' => $this->curlLogFile,
 		];
 
@@ -1005,14 +1020,12 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	}
 
 	/**
-	 * @param RequestInterface $request
+	 * @param Http\Curl\Handler | Http\Socket\Handler $handler
 	 * @param Http\Queue $queue
 	 * @return Http\Curl\Promise | Http\Socket\Promise
 	 */
-	protected function createPromise(RequestInterface $request, Http\Queue $queue)
+	protected function createPromise($handler, Http\Queue $queue)
 	{
-		$handler = $this->createHandler($request);
-
 		if ($this->useCurl)
 		{
 			return new Http\Curl\Promise($handler, $queue);
@@ -1022,7 +1035,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 
 	/**
 	 * @param bool $backgroundJob
-	 * @return Http\Curl\Queue|Http\Socket\Queue
+	 * @return Http\Curl\Queue | Http\Socket\Queue
 	 */
 	protected function createQueue(bool $backgroundJob = true)
 	{
@@ -1057,10 +1070,11 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	 * Sets a callback called before fetching a message body.
 	 *
 	 * @param callable $callback
-	 * @return void
+	 * @return $this
 	 */
-	public function shouldFetchBody(callable $callback): void
+	public function shouldFetchBody(callable $callback)
 	{
 		$this->shouldFetchBody = $callback;
+		return $this;
 	}
 }

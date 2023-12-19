@@ -175,8 +175,7 @@ class RestrictionTable extends DataManager
 				ADDITIONAL_PARAMS = IF (
 					LOCATE('{$encodedAdditionalParam}', ADDITIONAL_PARAMS) = 0,
 					CONCAT_WS(' ', ADDITIONAL_PARAMS, '{$encodedAdditionalParam}'),
-					'{$encodedAdditionalParam}'
-					
+					ADDITIONAL_PARAMS
 				)
 			{$where}
 		";
@@ -234,8 +233,8 @@ class RestrictionTable extends DataManager
 			),
 			ADDITIONAL_PARAMS = IF(
 				LOCATE('{$additionalParam}', ADDITIONAL_PARAMS) = 0,
-				'{$additionalParam}',
-				CONCAT_WS(' ', ADDITIONAL_PARAMS, '{$additionalParam}')
+				CONCAT_WS(' ', ADDITIONAL_PARAMS, '{$additionalParam}'),
+				ADDITIONAL_PARAMS
 			)
 		";
 

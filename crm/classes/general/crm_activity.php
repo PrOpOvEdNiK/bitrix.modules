@@ -23,6 +23,8 @@ use Bitrix\Main\DI\ServiceLocator;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Web\Uri;
+use Bitrix\Crm\Activity\FastSearch;
+use Bitrix\Crm\Activity\Provider;
 
 class CAllCrmActivity
 {
@@ -337,6 +339,10 @@ class CAllCrmActivity
 			}
 		}
 		\Bitrix\Crm\Counter\Monitor::getInstance()->onActivityAdd($arFields, $arBindings, $lightTimeDate);
+
+		FastSearch\Sync\Monitor::getInstance()->onActivityAdd(
+			FastSearch\Sync\ActivityChangeSet::build(null, $arFields)
+		);
 		// <-- Synchronize user activity
 
 		$provider = self::GetActivityProvider($arFields);
@@ -876,6 +882,10 @@ class CAllCrmActivity
 			$lightTimeDate
 		);
 
+		FastSearch\Sync\Monitor::getInstance()->onActivityUpdate(
+			FastSearch\Sync\ActivityChangeSet::build($arPrevEntity, $arCurEntity)
+		);
+
 		if($regEvent)
 		{
 			foreach($arBindings as $arBinding)
@@ -1275,6 +1285,8 @@ class CAllCrmActivity
 		{
 			\Bitrix\Crm\Counter\Monitor::getInstance()->onActivityDelete($ary, $arBindings, $oldLightTimeDate);
 		}
+
+		FastSearch\Sync\Monitor::getInstance()->onActivityDelete($ID, $ary);
 
 		\Bitrix\Crm\Ml\Scoring::onActivityDelete($ID);
 
@@ -2210,13 +2222,46 @@ class CAllCrmActivity
 
 	/**
 	 * @param array $activity - Activity fields.
-	 * @return null|\Bitrix\Crm\Activity\Provider\Base
+	 * @return null|Provider\Base
 	 */
 	public static function GetActivityProvider(array $activity)
 	{
-		$provider = !empty($activity['PROVIDER_ID']) ? self::GetProviderById($activity['PROVIDER_ID']) : null;
+		return self::activityProvider($activity);
+	}
+
+	/**
+	 * return activity provider even if is disabled
+	 * @param array $activity
+	 * @return Provider\Base|null
+	 */
+	public static function GetActivityProviderSafelyByDisabled(array $activity)
+	{
+		return self::activityProvider($activity, true);
+	}
+
+	/**
+	 * @param array $activity
+	 * @param bool $withInactiveProviders
+	 * @return Provider\Base|null
+	 */
+	private static function activityProvider(array $activity, bool $withInactiveProviders = false)
+	{
+		$providerId = $activity['PROVIDER_ID'] ?? null;
+
+		if ($withInactiveProviders)
+		{
+			$provider = $providerId ? self::GetProviderByIdSafelyByDisabled($providerId) : null;
+		}
+		else
+		{
+			$provider = $providerId ? self::GetProviderById($providerId) : null;
+		}
+
 		if ($provider === null && !empty($activity['TYPE_ID']))
+		{
 			$provider = self::GetProviderByType($activity['TYPE_ID']);
+		}
+
 		return $provider;
 	}
 
@@ -2228,6 +2273,18 @@ class CAllCrmActivity
 	{
 		$providerId = (string) $providerId;
 		$providers = static::GetProviders();
+
+		return array_key_exists($providerId, $providers) ? $providers[$providerId] : null;
+	}
+
+	/**
+	 * return activity provider even if is disabled
+	 * @param string $providerId Provider id.
+	 * @return null|\Bitrix\Crm\Activity\Provider\Base
+	 */
+	public static function GetProviderByIdSafelyByDisabled(string $providerId)
+	{
+		$providers = Provider\ProviderManager::getAllProviders();
 
 		return array_key_exists($providerId, $providers) ? $providers[$providerId] : null;
 	}

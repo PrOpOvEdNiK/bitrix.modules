@@ -180,7 +180,7 @@ class Folder extends BaseObject
 		}
 
 		$fileArray['type'] = TypeFile::normalizeMimeType($fileArray['type'], $data['NAME']);
-
+		$fileArray['name'] = $data['NAME'];
 
 		$fileId = CFile::saveFile($fileArray, Driver::INTERNAL_MODULE_ID, true, true);
 		if(!$fileId)

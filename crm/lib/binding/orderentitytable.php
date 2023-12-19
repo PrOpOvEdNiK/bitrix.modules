@@ -65,7 +65,7 @@ class OrderEntityTable extends Main\ORM\Data\DataManager
 
 	/**
 	 * @param $orderId
-	 * @return int|false
+	 * @return array|false
 	 * @throws Main\ArgumentException
 	 * @throws Main\ObjectPropertyException
 	 * @throws Main\SystemException

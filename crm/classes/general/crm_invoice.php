@@ -1,17 +1,18 @@
 <?php
 
-use Bitrix\Main;
-use Bitrix\Main\Loader;
-use Bitrix\Main\Localization\Loc;
+use Bitrix\Catalog;
 use Bitrix\Crm\CompanyAddress;
 use Bitrix\Crm\ContactAddress;
 use Bitrix\Crm\EntityAddressType;
 use Bitrix\Crm\Format\AddressFormatter;
-use Bitrix\Crm\Invoice\Invoice;
 use Bitrix\Crm\Invoice\Compatible;
+use Bitrix\Crm\Invoice\Invoice;
+use Bitrix\Crm\Service\Container;
 use Bitrix\Crm\Settings;
 use Bitrix\Iblock;
-use Bitrix\Catalog;
+use Bitrix\Main;
+use Bitrix\Main\Loader;
+use Bitrix\Main\Localization\Loc;
 
 if (!Loader::includeModule('sale'))
 	return;
@@ -3002,6 +3003,42 @@ class CAllCrmInvoice
 				\Bitrix\Crm\Settings\CounterSettings::getInstance()->cleanCounterLimitCache();
 			}
 		}
+		$clearSPAWrongSection = '~CRM_CLEAR_SPA_WRONG_SECTION';
+		if ((string)COption::GetOptionString('crm', $clearSPAWrongSection, 'N') === 'N')
+		{
+			COption::SetOptionString('crm', $clearSPAWrongSection, 'Y');
+			if ($DB->TableExists('b_intranet_custom_section_page') && $DB->TableExists('b_intranet_custom_section'))
+			{
+				$DB->Query('delete from b_intranet_custom_section_page where CUSTOM_SECTION_ID not in (select c.ID from b_intranet_custom_section c)');
+			}
+		}
+		$clearWrongInterfaceFormRecords = '~CLEAR_WRONG_INTERFACE_FORM_RECORDS';
+		if (
+			!Settings\LayoutSettings::getCurrent()->isSliderEnabled()
+			&& !\Bitrix\Crm\Integration\Socialnetwork\Livefeed\AvailabilityHelper::isAvailable()
+			&& (string)COption::GetOptionString('crm', $clearWrongInterfaceFormRecords, 'N') === 'N'
+		)
+		{
+			COption::SetOptionString('crm', $clearWrongInterfaceFormRecords, 'Y');
+			$itemsIterator = $DB->Query('select CATEGORY, NAME, USER_ID from b_user_option where CATEGORY="main.interface.form" and NAME like "CRM\_%\_SHOW\_V12%"');
+			while ($item = $itemsIterator->Fetch())
+			{
+				$value = CUserOptions::GetOption($item['CATEGORY'], $item['NAME'], null, $item['USER_ID']);
+				if (is_array($value) && is_array($value['tabs']))
+				{
+					foreach ($value['tabs'] as $i => $tab)
+					{
+						if (($tab['id'] ?? '') === 'tab_live_feed')
+						{
+							unset($value['tabs'][$i]);
+							$value['tabs'] = array_values($value['tabs']);
+							CUserOptions::SetOption($item['CATEGORY'], $item['NAME'], $value,$item['USER_ID'] == 0, $item['USER_ID']);
+							break;
+						}
+					}
+				}
+			}
+		}
 
 		$catalogNormalizeOption = '~CRM_CATALOG_NORMALIZE_18_5_0';
 		$catalogNormalizeStep = (string)Main\Config\Option::get('crm', $catalogNormalizeOption, 'N');
@@ -5550,8 +5587,13 @@ class CAllCrmInvoice
 		if ($myCompanyId > 0)
 		{
 			$filter = array('ID' => $myCompanyId);
-			if ($isPublicLinkMode)
+			if (
+				$isPublicLinkMode
+				|| Container::getInstance()->getUserPermissions()->getMyCompanyPermissions()->canReadBaseFields()
+			)
+			{
 				$filter['CHECK_PERMISSIONS'] = 'N';
+			}
 			$res = CCrmCompany::GetListEx(
 				array(),
 				$filter,

@@ -282,6 +282,13 @@ class CCrmPerms
 
 		if (!$result)
 		{
+			$permissions = Container::getInstance()->getUserPermissions($userPermissions->GetUserID());
+
+			if ($permissions->canReadType(\CCrmOwnerType::SmartInvoice))
+			{
+				return true;
+			}
+
 			$dynamicTypesMap = Container::getInstance()->getDynamicTypesMap();
 			// avoiding exceptions as this method has usages across the product.
 			try
@@ -299,10 +306,7 @@ class CCrmPerms
 			}
 			foreach ($dynamicTypesMap->getTypes() as $type)
 			{
-				if (
-					Container::getInstance()->getUserPermissions($userPermissions->GetUserID())
-						->canReadType($type->getEntityTypeId())
-				)
+				if ($permissions->canReadType($type->getEntityTypeId()))
 				{
 					$result = true;
 					break;

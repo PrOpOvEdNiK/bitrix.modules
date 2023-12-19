@@ -9,7 +9,7 @@ IncludeModuleLangFile(__FILE__);
 
 class CSocServGoogleOAuth extends CSocServAuth
 {
-	const ID = "GoogleOAuth";
+	public const ID = "GoogleOAuth";
 	const LOGIN_PREFIX = "G_";
 
 	/** @var CGoogleOAuthInterface null  */
@@ -83,34 +83,49 @@ class CSocServGoogleOAuth extends CSocServAuth
 	{
 		$this->entityOAuth = $this->getEntityOAuth();
 
-		if($this->userId == null)
+		if ($this->userId === null)
 		{
 			$this->entityOAuth->setRefreshToken("skip");
 		}
 
-		if($addScope !== null)
+		if ($addScope !== null)
 		{
 			$this->entityOAuth->addScope($addScope);
 		}
-		if(IsModuleInstalled('bitrix24') && defined('BX24_HOST_NAME'))
+
+		$removeParams = [
+			'logout',
+			'auth_service_error',
+			'auth_service_id',
+			'backurl',
+			'serviceName',
+			'hitHash',
+		];
+
+		if (IsModuleInstalled('bitrix24') && defined('BX24_HOST_NAME'))
 		{
 			$redirect_uri = static::getControllerUrl()."/redirect.php";
 			$state = $this->getEntityOAuth()->getRedirectUri()."?check_key=".\CSocServAuthManager::getUniqueKey()."&state=";
-			$backurl = $GLOBALS["APPLICATION"]->GetCurPageParam('', array("logout", "auth_service_error", "auth_service_id", "backurl"));
+			$backurl = $GLOBALS["APPLICATION"]->GetCurPageParam('', $removeParams);
 			$state .= urlencode('provider='.static::ID.
 				"&state=".urlencode("backurl=".urlencode($backurl)
 					.'&mode='.$location.(isset($arParams['BACKURL'])
 						? '&redirect_url='.urlencode($arParams['BACKURL'])
 						: '')
-			));
+				));
 		}
 		else
 		{
-			$state = 'provider='.static::ID.'&site_id='.SITE_ID.'&backurl='.urlencode($GLOBALS["APPLICATION"]->GetCurPageParam('check_key='.\CSocServAuthManager::getUniqueKey(), array("logout", "auth_service_error", "auth_service_id", "backurl"))).'&mode='.$location.(isset($arParams['BACKURL']) ? '&redirect_url='.urlencode($arParams['BACKURL']) : '');
+			$state = 'provider='.static::ID.'&site_id='.SITE_ID
+				.'&backurl='.urlencode($GLOBALS["APPLICATION"]->GetCurPageParam('check_key='.\CSocServAuthManager::getUniqueKey(), $removeParams))
+				.'&mode='.$location.(isset($arParams['BACKURL'])
+					? '&redirect_url='.urlencode($arParams['BACKURL'])
+					: '')
+			;
 			$redirect_uri = $this->getEntityOAuth()->getRedirectUri();
 		}
 
-		return $this->entityOAuth->GetAuthUrl($redirect_uri, $state, $arParams['APIKEY']);
+		return $this->entityOAuth->GetAuthUrl($redirect_uri, $state, $arParams['APIKEY'] ?? '');
 	}
 
 	public function getStorageToken()
@@ -154,24 +169,32 @@ class CSocServGoogleOAuth extends CSocServAuth
 			$first_name = $arGoogleUser['name']['givenName'];
 			$last_name = $arGoogleUser['name']['familyName'];
 		}
-		elseif($arGoogleUser['name'] <> '')
+		elseif(!empty($arGoogleUser['name']))
 		{
 			$aName = explode(" ", $arGoogleUser['name']);
-			if($arGoogleUser['given_name'] <> '')
+			if(!empty($arGoogleUser['given_name']))
+			{
 				$first_name = $arGoogleUser['given_name'];
+			}
 			else
+			{
 				$first_name = $aName[0];
+			}
 
-			if($arGoogleUser['family_name'] <> '')
+			if(!empty($arGoogleUser['family_name']))
+			{
 				$last_name = $arGoogleUser['family_name'];
-			elseif(isset($aName[1]))
+			}
+			elseif(!empty($aName[1]))
+			{
 				$last_name = $aName[1];
+			}
 		}
 
 		$id = $arGoogleUser['id'] ?? $arGoogleUser['sub'];
 		$email = $arGoogleUser['email'];
 
-		if($arGoogleUser['email'] <> '')
+		if(!empty($arGoogleUser['email']))
 		{
 			$dbRes = \Bitrix\Main\UserTable::getList(array(
 				'filter' => array(
@@ -187,7 +210,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 			}
 		}
 
-		$arFields = array(
+		$arFields = [
 			'EXTERNAL_AUTH_ID' => static::ID,
 			'XML_ID' => $id,
 			'LOGIN' => static::LOGIN_PREFIX.$id,
@@ -197,21 +220,21 @@ class CSocServGoogleOAuth extends CSocServAuth
 			'OATOKEN' => $this->entityOAuth->getToken(),
 			'OATOKEN_EXPIRES' => $this->entityOAuth->getAccessTokenExpires(),
 			'REFRESH_TOKEN' => $this->entityOAuth->getRefreshToken(),
-		);
+		];
 
-		if($arGoogleUser['gender'] <> '')
+		if(!empty($arGoogleUser['gender']))
 		{
-			if($arGoogleUser['gender'] == 'male')
+			if($arGoogleUser['gender'] === 'male')
 			{
 				$arFields["PERSONAL_GENDER"] = 'M';
 			}
-			elseif($arGoogleUser['gender'] == 'female')
+			elseif($arGoogleUser['gender'] === 'female')
 			{
 				$arFields["PERSONAL_GENDER"] = 'F';
 			}
 		}
 
-		if(!$short && isset($arGoogleUser['picture']) && static::CheckPhotoURI($arGoogleUser['picture']))
+		if(!$short && isset($arGoogleUser['picture']) && $this->CheckPhotoURI($arGoogleUser['picture']))
 		{
 			$arGoogleUser['picture'] = preg_replace("/\?.*$/", '', $arGoogleUser['picture']);
 			$arPic = false;
@@ -233,11 +256,9 @@ class CSocServGoogleOAuth extends CSocServAuth
 			}
 		}
 
-		$arFields["PERSONAL_WWW"] = isset($arGoogleUser['link'])
-			? $arGoogleUser['link']
-			: $arGoogleUser['url'];
+		$arFields["PERSONAL_WWW"] = $arGoogleUser['link'] ?? $arGoogleUser['url'];
 
-		if(SITE_ID <> '')
+		if(!empty(SITE_ID))
 		{
 			$arFields["SITE_ID"] = SITE_ID;
 		}
@@ -255,10 +276,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 
 		$authError = SOCSERV_AUTHORISATION_ERROR;
 
-		if(
-			isset($_REQUEST["code"]) && $_REQUEST["code"] <> ''
-			&& CSocServAuthManager::CheckUniqueKey()
-		)
+		if(!empty($_REQUEST["code"]) && CSocServAuthManager::CheckUniqueKey())
 		{
 			$this->getEntityOAuth()->setCode($_REQUEST["code"]);
 
@@ -270,7 +288,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 
 				if(is_array($arGoogleUser) && !isset($arGoogleUser["error"]))
 				{
-					$arFields = self::prepareUser($arGoogleUser);
+					$arFields = $this->prepareUser($arGoogleUser);
 					$authError = $this->AuthorizeUser($arFields);
 				}
 			}
@@ -283,13 +301,14 @@ class CSocServGoogleOAuth extends CSocServAuth
 
 		$bSuccess = $authError === true;
 
-		$aRemove = array("logout", "auth_service_error", "auth_service_id", "code", "error_reason", "error", "error_description", "check_key", "current_fieldset");
+		$aRemove = ["logout", "auth_service_error", "auth_service_id", "code", "error_reason", "error", "error_description", "check_key", "current_fieldset"];
+		$mode = null;
 
 		if($bSuccess)
 		{
 			CSocServUtil::checkOAuthProxyParams();
 
-			$url = ($APPLICATION->GetCurDir() == "/login/") ? "" : $APPLICATION->GetCurDir();
+			$url = ($APPLICATION->GetCurDir() === "/login/") ? "" : $APPLICATION->GetCurDir();
 			$mode = 'opener';
 			$addParams = true;
 			if(isset($_REQUEST["state"]))
@@ -300,7 +319,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 				if(isset($arState['backurl']) || isset($arState['redirect_url']))
 				{
 					$url = !empty($arState['redirect_url']) ? $arState['redirect_url'] : $arState['backurl'];
-					if(mb_substr($url, 0, 1) !== "#")
+					if (!str_starts_with($url, "#"))
 					{
 						$parseUrl = parse_url($url);
 
@@ -311,7 +330,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 						{
 							foreach($aRemove as $param)
 							{
-								if(mb_strpos($value, $param."=") === 0)
+								if (str_starts_with($value, $param . "="))
 								{
 									unset($arUrlQuery[$key]);
 									break;
@@ -334,12 +353,12 @@ class CSocServGoogleOAuth extends CSocServAuth
 			}
 		}
 
-		if($authError === SOCSERV_REGISTRATION_DENY)
+		if ($authError === SOCSERV_REGISTRATION_DENY)
 		{
 			$url = (preg_match("/\?/", $url)) ? $url.'&' : $url.'?';
 			$url .= 'auth_service_id='.static::ID.'&auth_service_error='.SOCSERV_REGISTRATION_DENY;
 		}
-		elseif($bSuccess !== true)
+		elseif ($bSuccess !== true)
 		{
 			$url = (isset($urlPath)) ? $urlPath.'?auth_service_id='.static::ID.'&auth_service_error='.$authError : $APPLICATION->GetCurPageParam(('auth_service_id='.static::ID.'&auth_service_error='.$authError), $aRemove);
 		}
@@ -351,23 +370,14 @@ class CSocServGoogleOAuth extends CSocServAuth
 
 		$url = CUtil::JSEscape($url);
 
-		if($addParams)
+		if ($bSuccess && $mode === self::MOBILE_MODE)
 		{
-			$location = ($mode == "opener") ? 'if(window.opener) window.opener.location = \''.$url.'\'; window.close();' : ' window.location = \''.$url.'\';';
+			$this->onAfterMobileAuth();
 		}
 		else
 		{
-			//fix for chrome
-			$location = ($mode == "opener") ? 'if(window.opener) window.opener.location = window.opener.location.href + \''.$url.'\'; window.close();' : ' window.location = window.location.href + \''.$url.'\';';
+			$this->onAfterWebAuth($addParams, $mode, $url);
 		}
-
-		$JSScript = '
-		<script type="text/javascript">
-		'.$location.'
-		</script>
-		';
-
-		echo $JSScript;
 
 		CMain::FinalActions();
 	}
@@ -379,7 +389,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 
 	public function getFriendsList($limit, &$next)
 	{
-		$res = array();
+		$res = [];
 
 		if($this->getEntityOAuth()->GetAccessToken() !== false)
 		{

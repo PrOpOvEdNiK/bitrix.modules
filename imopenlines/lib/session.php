@@ -1,24 +1,24 @@
 <?php
 namespace Bitrix\ImOpenLines;
 
-use Bitrix\Im\V2\Message\ReadService;
-use Bitrix\ImOpenLines\Session\Update;
 use Bitrix\Main;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Application;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Localization\Loc;
-use Bitrix\Main\DB\SqlExpression;
 use Bitrix\Main\UserConsent\Consent;
 
 use Bitrix\Im\User;
 use Bitrix\Im\Model\ChatTable;
 use Bitrix\Im\Model\MessageTable;
+use Bitrix\Im\V2\Message\ReadService;
+use Bitrix\Im\V2\Message\Params;
 
 use Bitrix\ImOpenLines\Log\Library;
 use Bitrix\Imopenlines\Im\Messages;
 use Bitrix\ImOpenLines\Log\EventLog;
 use Bitrix\ImOpenLines\Session\Agent;
+use Bitrix\ImOpenLines\Session\Update;
 use Bitrix\ImOpenLines\Model\SessionTable;
 use Bitrix\ImOpenLines\Model\SessionCheckTable;
 use Bitrix\Imopenlines\Model\SessionIndexTable;
@@ -41,8 +41,7 @@ class Session
 	public $chat = null;
 
 	private $action = 'none';
-	public $joinUserId = 0;
-	public $joinUserList = [];
+	private $joinUserList = [];
 	private $isCreated = false;
 	protected $isCloseVote = false;
 	protected $isDisabledSendSystemMessage = false;
@@ -288,9 +287,14 @@ class Session
 		$result = new Result();
 
 		/* CRM BLOCK */
-		if ($params['SKIP_CRM'] != 'Y')
+		$crmManager = new Crm($this);
+
+		if ($params['SKIP_CRM'] == 'Y')
 		{
-			$crmManager = new Crm($this);
+			$crmManager->setSkipCreate();
+		}
+		else
+		{
 			if ($crmManager->isLoaded())
 			{
 				$crmManager
@@ -359,7 +363,11 @@ class Session
 
 				$queueManager = Queue::initialization($this);
 
-				$resultQueue = $queueManager->createSession($fields['OPERATOR_ID'], $crmManager, Connector::isEnableGroupByChat($fields['SOURCE']));
+				$resultQueue = $queueManager->createSession(
+					$fields['OPERATOR_ID'],
+					$crmManager,
+					Connector::isEnableGroupByChat($fields['SOURCE'])
+				);
 
 				$this->session['JOIN_BOT'] = $resultQueue['JOIN_BOT'];
 				$this->session['OPERATOR_ID'] = $fields['OPERATOR_ID'] = $params['OPERATOR_ID'] = $resultQueue['OPERATOR_ID'];
@@ -382,7 +390,21 @@ class Session
 				}
 				else
 				{
-					$messageId = Messages\Session::sendMessageStartSession($fields['CHAT_ID'], $fields['SESSION_ID']);
+					if (
+						isset($params['CONNECTOR']['message']['extraData']['SOURCE_SESSION_ID'])
+						&& isset($params['CONNECTOR']['message']['extraData']['SOURCE_CHAT_ID'])
+					)
+					{
+						$messageId = Messages\Session::sendMessageNewMultidialog(
+							$fields['CHAT_ID'],
+							$params['CONNECTOR']['message']['extraData']['SOURCE_CHAT_ID'],
+							$params['CONNECTOR']['message']['extraData']['SOURCE_SESSION_ID']
+						);
+					}
+					else
+					{
+						$messageId = Messages\Session::sendMessageStartSession($fields['CHAT_ID'], $fields['SESSION_ID']);
+					}
 				}
 				//END Send message
 
@@ -921,13 +943,19 @@ class Session
 				'USER_ID' => $params['USER_ID']
 			]);
 
-			$this->chat = new Chat();
-			$this->chat->load([
-				'USER_CODE' => $params['USER_CODE'],
-				'USER_ID' => $params['USER_ID'],
-				'LINE_NAME' => $this->config['LINE_NAME'],
-				'CONNECTOR' => $params['CONNECTOR'],
-			]);
+			if (!($this->chat instanceof Chat))
+			{
+				$this->chat = new Chat();
+			}
+			if (!$this->chat->isDataLoaded())
+			{
+				$this->chat->load([
+					'USER_CODE' => $params['USER_CODE'],
+					'USER_ID' => $params['USER_ID'],
+					'LINE_NAME' => $this->config['LINE_NAME'],
+					'CONNECTOR' => $params['CONNECTOR'],
+				]);
+			}
 			if ($this->chat->isDataLoaded())
 			{
 				\Bitrix\Imopenlines\Model\UserRelationTable::update($params['USER_CODE'], ['CHAT_ID' => $this->chat->getData('ID')]);
@@ -1055,6 +1083,7 @@ class Session
 			'SPAM' => 'Y',
 			'WAIT_ANSWER' => 'N',
 			'DATE_MODIFY' => new DateTime(),
+			'SKIP_RECENT' => 'Y'
 		]);
 
 		Debug::addSession($this,  __METHOD__);
@@ -1133,15 +1162,15 @@ class Session
 					'FROM_USER_ID' => $this->session['OPERATOR_ID'],
 					'MESSAGE' => Loc::getMessage('IMOL_SESSION_CLOSE_FINAL'),
 					'SYSTEM' => 'Y',
-					'RECENT_ADD'=> $userViewChat? 'Y': 'N',
+					'RECENT_ADD' => $userViewChat ? 'Y' : 'N',
 					'PARAMS' => [
-						'CLASS' => 'bx-messenger-content-item-ol-end',
-						'TYPE' => 'lines',
-						'COMPONENT_ID' => 'bx-imopenlines-message',
-						'IMOL_VOTE_SID' => $this->session['ID'],
-						'IMOL_VOTE_USER' => $this->session['VOTE'],
-						'IMOL_VOTE_HEAD' => $this->session['VOTE_HEAD'],
-						'IMOL_COMMENT_HEAD' => htmlspecialcharsbx($this->session['COMMENT_HEAD']),
+						Params::STYLE_CLASS => 'bx-messenger-content-item-ol-end',
+						Params::TYPE => 'lines',
+						Params::COMPONENT_ID => 'bx-imopenlines-message',
+						MessageParameter::IMOL_VOTE_SID => $this->session['ID'],
+						MessageParameter::IMOL_VOTE_USER => $this->session['VOTE'],
+						MessageParameter::IMOL_VOTE_HEAD => $this->session['VOTE_HEAD'],
+						MessageParameter::IMOL_COMMENT_HEAD => htmlspecialcharsbx($this->session['COMMENT_HEAD']),
 					]
 				];
 			}
@@ -1160,13 +1189,13 @@ class Session
 						'MESSAGE'=> Loc::getMessage('IMOL_SESSION_CLOSE_FINAL'),
 						'SYSTEM'=> 'Y',
 						'PARAMS' => [
-							'CLASS' => 'bx-messenger-content-item-ol-end',
-							'TYPE' => 'lines',
-							'COMPONENT_ID' => 'bx-imopenlines-message',
-							'IMOL_VOTE_SID' => $this->session['ID'],
-							'IMOL_VOTE_USER' => $this->session['VOTE'],
-							'IMOL_VOTE_HEAD' => $this->session['VOTE_HEAD'],
-							'IMOL_COMMENT_HEAD' => htmlspecialcharsbx($this->session['COMMENT_HEAD']),
+							Params::STYLE_CLASS => 'bx-messenger-content-item-ol-end',
+							Params::TYPE => 'lines',
+							Params::COMPONENT_ID => 'bx-imopenlines-message',
+							MessageParameter::IMOL_VOTE_SID => $this->session['ID'],
+							MessageParameter::IMOL_VOTE_USER => $this->session['VOTE'],
+							MessageParameter::IMOL_VOTE_HEAD => $this->session['VOTE_HEAD'],
+							MessageParameter::IMOL_COMMENT_HEAD => htmlspecialcharsbx($this->session['COMMENT_HEAD']),
 						]
 					];
 				}
@@ -1209,10 +1238,10 @@ class Session
 							'IMPORTANT_CONNECTOR' => 'Y',
 							'NO_SESSION_OL' => 'Y',
 							'PARAMS' => [
-								'CLASS' => 'bx-messenger-content-item-ol-output',
-								'IMOL_FORM' => 'history',
-								'TYPE' => 'lines',
-								'COMPONENT_ID' => 'bx-imopenlines-message',
+								Params::STYLE_CLASS => 'bx-messenger-content-item-ol-output',
+								Params::TYPE => 'lines',
+								Params::COMPONENT_ID => 'bx-imopenlines-message',
+								MessageParameter::IMOL_FORM => 'history',
 							]
 						];
 
@@ -1240,7 +1269,6 @@ class Session
 						{
 							$dateCloseVote = new DateTime();
 							$dateCloseVote->add(((int)$this->config['VOTE_TIME_LIMIT']) . ' SECONDS');
-							//$dateCloseVote->add('15 SECONDS');
 							$update['DATE_CLOSE_VOTE'] = $dateCloseVote;
 
 							$paramsDateCloseVote = date('c', $dateCloseVote->getTimestamp());
@@ -1250,21 +1278,22 @@ class Session
 							'TO_CHAT_ID' => $this->session['CHAT_ID'],
 							'FROM_USER_ID' => $this->session['OPERATOR_ID'],
 							'MESSAGE' => $this->config['VOTE_MESSAGE_2_TEXT'],
-							'SYSTEM'=> 'Y',
-							'RECENT_ADD' => $userViewChat? 'Y': 'N',
+							'SYSTEM' => 'Y',
+							'RECENT_ADD' => $userViewChat ? 'Y' : 'N',
 							'IMPORTANT_CONNECTOR' => 'Y',
 							'NO_SESSION_OL' => 'Y',
 							'PARAMS' => [
-								'IMOL_VOTE' => $this->session['ID'],
-								'IMOL_VOTE_TEXT' => $this->config['VOTE_MESSAGE_1_TEXT'],
-								'IMOL_VOTE_LIKE' => $this->config['VOTE_MESSAGE_1_LIKE'],
-								'IMOL_VOTE_DISLIKE' => $this->config['VOTE_MESSAGE_1_DISLIKE'],
-								'IMOL_DATE_CLOSE_VOTE' => (string)$paramsDateCloseVote,
-								'IMOL_TIME_LIMIT_VOTE' => (string)$this->config['VOTE_TIME_LIMIT'],
-								'CLASS' => 'bx-messenger-content-item-ol-output bx-messenger-content-item-vote',
-								'IMOL_FORM' => 'like',
-								'TYPE' => 'lines',
-								'COMPONENT_ID' => 'bx-imopenlines-message',
+								MessageParameter::IMOL_VOTE => $this->session['ID'], //todo: Stay here sessionID for compatibility with old client. Replace it with 'none' string
+								MessageParameter::IMOL_VOTE_SID => $this->session['ID'],
+								MessageParameter::IMOL_VOTE_TEXT => $this->config['VOTE_MESSAGE_1_TEXT'],
+								MessageParameter::IMOL_VOTE_LIKE => $this->config['VOTE_MESSAGE_1_LIKE'],
+								MessageParameter::IMOL_VOTE_DISLIKE => $this->config['VOTE_MESSAGE_1_DISLIKE'],
+								MessageParameter::IMOL_DATE_CLOSE_VOTE => (string)$paramsDateCloseVote,
+								MessageParameter::IMOL_TIME_LIMIT_VOTE => (string)$this->config['VOTE_TIME_LIMIT'],
+								MessageParameter::IMOL_FORM => 'like',
+								Params::STYLE_CLASS => 'bx-messenger-content-item-ol-output bx-messenger-content-item-vote',
+								Params::TYPE => 'lines',
+								Params::COMPONENT_ID => 'bx-imopenlines-message',
 							]
 						];
 
@@ -1283,12 +1312,12 @@ class Session
 							];
 							if ($this->config['VOTE_MESSAGE'] === 'Y')
 							{
-								$params['TYPE'] = 'lines';
-								$params['COMPONENT_ID'] = 'bx-imopenlines-message';
-								$params['IMOL_VOTE_SID'] = $this->session['ID'];
-								$params['IMOL_VOTE_USER'] = $this->session['VOTE'];
-								$params['IMOL_VOTE_HEAD'] = $this->session['VOTE_HEAD'];
-								$params['IMOL_COMMENT_HEAD'] = htmlspecialcharsbx($this->session['COMMENT_HEAD']);
+								$params[Params::TYPE] = 'lines';
+								$params[Params::COMPONENT_ID] = 'bx-imopenlines-message';
+								$params[MessageParameter::IMOL_VOTE_SID] = $this->session['ID'];
+								$params[MessageParameter::IMOL_VOTE_USER] = $this->session['VOTE'];
+								$params[MessageParameter::IMOL_VOTE_HEAD] = $this->session['VOTE_HEAD'];
+								$params[MessageParameter::IMOL_COMMENT_HEAD] = htmlspecialcharsbx($this->session['COMMENT_HEAD']);
 							}
 							$messages[] = [
 								'TO_CHAT_ID' => $this->session['CHAT_ID'],
@@ -1304,14 +1333,14 @@ class Session
 							$userSkip = User::getInstance($this->chat->getData('OPERATOR_ID'));
 
 							$params = [
-								'CLASS' => 'bx-messenger-content-item-ol-end'
+								Params::STYLE_CLASS => 'bx-messenger-content-item-ol-end'
 							];
 							if ($this->config['VOTE_MESSAGE'] === 'Y')
 							{
-								$params['IMOL_VOTE_SID'] = $this->session['ID'];
-								$params['IMOL_VOTE_USER'] = $this->session['VOTE'];
-								$params['IMOL_VOTE_HEAD'] = $this->session['VOTE_HEAD'];
-								$params['IMOL_COMMENT_HEAD'] = htmlspecialcharsbx($this->session['COMMENT_HEAD']);
+								$params[MessageParameter::IMOL_VOTE_SID] = $this->session['ID'];
+								$params[MessageParameter::IMOL_VOTE_USER] = $this->session['VOTE'];
+								$params[MessageParameter::IMOL_VOTE_HEAD] = $this->session['VOTE_HEAD'];
+								$params[MessageParameter::IMOL_COMMENT_HEAD] = htmlspecialcharsbx($this->session['COMMENT_HEAD']);
 							}
 							$messages[] = [
 								'TO_CHAT_ID' => $this->session['CHAT_ID'],
@@ -1406,6 +1435,14 @@ class Session
 			if ($hideChat)
 			{
 				Im::chatHide($this->session['CHAT_ID']);
+
+				$fakeRelation = new Relation((int)$this->session['CHAT_ID']);
+				$fakeRelation->removeAllRelations(true);
+
+				if (!$auto && $this->session['STATUS'] > Session::STATUS_SKIP && $currentUserId = \Bitrix\Im\User::getInstance()->getId())
+				{
+					\CIMDisk::ChangeFolderMembers($this->session['CHAT_ID'], $currentUserId, false);
+				}
 			}
 
 			if (!empty($this->user['USER_CODE']))
@@ -2004,24 +2041,25 @@ class Session
 	/**
 	 * To add users to the chat.
 	 *
-	 * @return bool
+	 * @return int
 	 */
-	public function joinUser()
+	public function joinUser(bool $skipRelation = false, int $fakeRelation = 0, int $fakeMessageId = 0)
 	{
 		Debug::addSession($this,  __METHOD__, ['joinUserList' => $this->joinUserList]);
 
+		$messageId = 0;
 		if (!empty($this->joinUserList))
 		{
 			$operatorFromCrm = false;
 			if ($this->isNowCreated())
 			{
-				$operatorFromCrm = $this->session['OPERATOR_FROM_CRM'] == 'Y'? true : false;
+				$operatorFromCrm = $this->session['OPERATOR_FROM_CRM'] == 'Y' ? true : false;
 			}
-			$this->chat->sendJoinMessage($this->joinUserList, $operatorFromCrm);
-			$this->chat->join($this->joinUserList);
+			$messageId = $this->chat->sendJoinMessage($this->joinUserList, $operatorFromCrm, $fakeRelation, (int)$this->session['ID'], $fakeMessageId);
+			$this->chat->join($this->joinUserList, true, false, $skipRelation);
 		}
 
-		return true;
+		return $messageId;
 	}
 
 	public function isNowCreated()
@@ -2432,9 +2470,11 @@ class Session
 		$chatId = (int)Chat::parseLinesChatEntityId($session['USER_CODE'])['connectorChatId'];
 		$sessionId = (int)$session['ID'];
 		$lastSendMailId ??= self::getLastMessageId($chatId);
-		$sql = "UPDATE b_imopenlines_session 
-				SET LAST_SEND_MAIL_ID = (case when LAST_SEND_MAIL_ID > {$lastSendMailId} then LAST_SEND_MAIL_ID else {$lastSendMailId} end)
-				WHERE ID = {$sessionId}";
+		$sql = "
+			UPDATE b_imopenlines_session 
+			SET LAST_SEND_MAIL_ID = (case when LAST_SEND_MAIL_ID > {$lastSendMailId} then LAST_SEND_MAIL_ID else {$lastSendMailId} end)
+			WHERE ID = {$sessionId}
+		";
 		Application::getConnection()->query($sql);
 	}
 
@@ -2710,6 +2750,7 @@ class Session
 		$kpi = new KpiManager($sessionId);
 		$kpi->deleteSessionMessages();
 		unset($kpi);
+		Recent::clearRecent((int)$sessionId);
 
 		return true;
 	}
@@ -2734,7 +2775,9 @@ class Session
 	}
 
 	/**
-	 * @return array
+	 * @param string $fieldName
+	 *
+	 * @return mixed|null
 	 */
 	public function getSessionField(string $fieldName)
 	{
@@ -2747,5 +2790,10 @@ class Session
 	public function setSessionField(string $fieldName, $value): void
 	{
 		$this->session[$fieldName] = $value;
+	}
+
+	public function getJoinUserList(): array
+	{
+		return $this->joinUserList;
 	}
 }

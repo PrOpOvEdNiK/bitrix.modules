@@ -73,6 +73,39 @@ class FieldType extends Base
 		);
 	}
 
+	public function renderControlCollectionAction(array $documentType, array $controlsData): HtmlContent
+	{
+		$renderer = new Bizproc\Controller\Response\RenderControlCollectionContent();
+
+		foreach ($controlsData as $data)
+		{
+			if (
+				is_array($data['property'] ?? null)
+				&& is_array($data['params'] ?? null)
+				&& $this->inputAndAccessCheck($documentType, $data['property'])
+			)
+			{
+				$property = $this->normalizeProperty($data['property']);
+
+				$params = (new Bizproc\Validator($data['params']))
+					->validateRequire('Field')
+					->validateArray('Field', Bizproc\Validator::TYPE_STRING)
+					->setPureValue('Value')
+					->setDefault('Value', '')
+					->validateRequire('Als')
+					->validateNumeric('Als')
+					->validateEnum('RenderMode', ['public', 'designer', ''])
+					->setDefault('RenderMode', '')
+					->getPureValues()
+				;
+
+				$renderer->addProperty($documentType, $property, $params);
+			}
+		}
+
+		return new HtmlContent($renderer, additionalResponseParams: $renderer->getRenderedProperties());
+	}
+
 	public function renderControlAction(array $documentType, array $property, array $params)
 	{
 		if (!$this->inputAndAccessCheck($documentType, $property))

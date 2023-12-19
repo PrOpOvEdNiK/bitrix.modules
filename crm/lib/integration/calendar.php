@@ -233,39 +233,8 @@ class Calendar
 
 	private static function getFormFieldsMap($configId)
 	{
-		$configScope = \CUserOptions::GetOption(
-			'crm.entity.editor',
-			"{$configId}_scope",
-			EntityEditorConfigScope::UNDEFINED
-		);
-
-		if (is_array($configScope))
-		{
-			$userScopeId = $configScope['userScopeId'];
-			$configScope = $configScope['scope'];
-		}
-		else
-		{
-			$userScopeId = null;
-		}
-
-		$userScopes = (
-			isset($configId)
-				? Scope::getInstance()->getUserScopes($configId, 'crm')
-				: null
-		);
-
-		if(
-			$configScope === EntityEditorConfigScope::CUSTOM
-			&& array_key_exists($userScopeId, $userScopes)
-		)
-		{
-			$formSettings = Scope::getInstance()->getScopeById($userScopeId);
-			if(!$formSettings)
-			{
-				$configScope = EntityEditorConfigScope::UNDEFINED;
-			}
-		}
+		$scope = new \Bitrix\Crm\Component\EntityDetails\Config\Scope();
+		$configScope = $scope->getByConfigId($configId, 'crm.entity.editor');
 
 		if($configScope === EntityEditorConfigScope::UNDEFINED)
 		{

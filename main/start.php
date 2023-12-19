@@ -86,7 +86,7 @@ if ($show_sql_stat == 'Y')
 
 /**
  * License key.
- * @deprecated Use $application->getLicense()->getKey()
+ * @deprecated Use $application->getLicense()->getKey().
  */
 define('LICENSE_KEY', $application->getLicense()->getKey());
 

@@ -324,6 +324,7 @@ class CIntranetUtils
 
 		$imageID = intval($imageID);
 
+		$arFileTmp = [];
 		if($imageID > 0)
 		{
 			$imageFile = CFile::GetFileArray($imageID);

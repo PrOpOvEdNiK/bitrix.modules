@@ -19,7 +19,20 @@ use Bitrix\Main\ORM\Fields\IntegerField;
  * </ul>
  *
  * @package Bitrix\Crm
- **/
+ *
+ * DO NOT WRITE ANYTHING BELOW THIS
+ *
+ * <<< ORMENTITYANNOTATION
+ * @method static EO_AgentContractContractor_Query query()
+ * @method static EO_AgentContractContractor_Result getByPrimary($primary, array $parameters = [])
+ * @method static EO_AgentContractContractor_Result getById($id)
+ * @method static EO_AgentContractContractor_Result getList(array $parameters = [])
+ * @method static EO_AgentContractContractor_Entity getEntity()
+ * @method static \Bitrix\Crm\Integration\Catalog\Contractor\EO_AgentContractContractor createObject($setDefaultValues = true)
+ * @method static \Bitrix\Crm\Integration\Catalog\Contractor\EO_AgentContractContractor_Collection createCollection()
+ * @method static \Bitrix\Crm\Integration\Catalog\Contractor\EO_AgentContractContractor wakeUpObject($row)
+ * @method static \Bitrix\Crm\Integration\Catalog\Contractor\EO_AgentContractContractor_Collection wakeUpCollection($rows)
+ */
 class AgentContractContractorTable extends DataManager
 {
 	/**

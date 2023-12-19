@@ -433,7 +433,37 @@ class File extends BaseObject
 			return null;
 		}
 
+		$this->clonePreviewData($this->getFileId(), $forkFileId);
+
 		return $fileModel;
+	}
+
+	private function clonePreviewData(int $originalFileId, int $clonedFileId)
+	{
+		$previewManager = new Main\UI\Viewer\PreviewManager();
+		$originalPreviewFileData = $previewManager->getFilePreviewEntryByFileId($originalFileId);
+		if (empty($originalPreviewFileData['ID']))
+		{
+			return;
+		}
+
+		$forkedPreviewImageFileId = null;
+		$forkedPreviewFileId = null;
+		if (!empty($originalPreviewFileData['PREVIEW_IMAGE_ID']))
+		{
+			$forkedPreviewImageFileId = \CFile::CloneFile($originalPreviewFileData['PREVIEW_IMAGE_ID']);
+		}
+		if (!empty($originalPreviewFileData['PREVIEW_ID']))
+		{
+			$forkedPreviewFileId = \CFile::CloneFile($originalPreviewFileData['PREVIEW_ID']);
+		}
+
+		$resultPreview = $previewManager->attachPreviewToFileId($clonedFileId, $forkedPreviewFileId, $forkedPreviewImageFileId);
+		if (!$resultPreview->isSuccess())
+		{
+			\CFile::delete($forkedPreviewImageFileId);
+			\CFile::delete($forkedPreviewFileId);
+		}
 	}
 
 	/**

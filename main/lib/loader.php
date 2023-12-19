@@ -363,7 +363,7 @@ class Loader
 				$module = $pathInfo["module"];
 				$holder = (self::$modulesHolders[$module] ?? self::BITRIX_HOLDER);
 
-				$filePath = (defined('REPOSITORY_ROOT'))
+				$filePath = (defined('REPOSITORY_ROOT') && $holder === self::BITRIX_HOLDER)
 					? REPOSITORY_ROOT
 					: "{$documentRoot}/{$holder}/modules";
 

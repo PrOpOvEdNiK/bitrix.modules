@@ -7,6 +7,8 @@ use Bitrix\Crm\CompanyAddress;
 use Bitrix\Crm\ContactAddress;
 use Bitrix\Crm\Entity\Traits\EntityFieldsNormalizer;
 use Bitrix\Crm\EntityAddressType;
+use Bitrix\Crm\FieldContext\EntityFactory;
+use Bitrix\Crm\FieldContext\ValueFiller;
 use Bitrix\Crm\Format\AddressFormatter;
 use Bitrix\Crm\Format\TextHelper;
 use Bitrix\Crm\Integration\StorageManager;
@@ -660,9 +662,11 @@ class CAllCrmQuote
 		if (!$this->bCheckPermission)
 			$arFilterTmp['CHECK_PERMISSIONS'] = 'N';
 
-		$obRes = self::GetList(array(), $arFilterTmp);
+		$obRes = self::GetList([], $arFilterTmp, false, false, ['*', 'UF_*']);
 		if (!($arRow = $obRes->Fetch()))
 			return false;
+
+		$currentFields = $arRow;
 
 		$iUserId = CCrmSecurityHelper::GetCurrentUserID();
 
@@ -1025,6 +1029,10 @@ class CAllCrmQuote
 			{
 				foreach (GetModuleEvents('crm', 'OnAfterCrmQuoteUpdate', true) as $arEvent)
 					ExecuteModuleEventEx($arEvent, array(&$arFields));
+
+				$scope = \Bitrix\Crm\Service\Container::getInstance()->getContext()->getScope();
+				$filler = new ValueFiller(CCrmOwnerType::Quote, $ID, $scope);
+				$filler->fill($currentFields, $arFields);
 			}
 		}
 		return $bResult;
@@ -1157,6 +1165,12 @@ class CAllCrmQuote
 			while ($arEvent = $afterEvents->Fetch())
 			{
 				ExecuteModuleEventEx($arEvent, array($ID));
+			}
+
+			$fieldsContextEntity = EntityFactory::getInstance()->getEntity(CCrmOwnerType::Quote);
+			if ($fieldsContextEntity)
+			{
+				$fieldsContextEntity::deleteByItemId($ID);
 			}
 		}
 		return true;

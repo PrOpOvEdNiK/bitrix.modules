@@ -125,6 +125,7 @@ class DealActivityStatisticEntry
 		$startTime = new DateTime($date->format(DateTime::getFormat()));
 		$endTime = new DateTime($date->format(DateTime::getFormat()));
 		$endTime->setTime(23, 59, 59);
+		$endTime->disableUserTime();
 
 		$query = new Query(Crm\ActivityTable::getEntity());
 		$query->addSelect('TYPE_ID');

@@ -3,6 +3,7 @@ namespace Bitrix\Intranet\UI\LeftMenu\Preset;
 
 use Bitrix\Intranet\UI\LeftMenu;
 use Bitrix\Main;
+use Bitrix\Intranet\Settings\Tools;
 
 Main\Localization\Loc::loadMessages(__FILE__);
 
@@ -149,6 +150,7 @@ abstract class PresetAbstract implements PresetInterface
 			$savedStructure = array_merge_recursive($data, ['show' => $expectedStructure['shown'], 'hide' => $expectedStructure['hidden']]);
 			$savedStructure = ['shown' => $savedStructure['show'], 'hidden' => $savedStructure['hide']];
 		}
+
 		return $savedStructure;
 	}
 
@@ -272,7 +274,8 @@ abstract class PresetAbstract implements PresetInterface
 
 		$res = $this->getPlainStructure();
 		$result = [];
-		if (in_array('menu_teamwork', $res))
+
+		if (in_array('menu_teamwork', $res, true))
 		{
 			$menuTeamWork = new LeftMenu\MenuItem\GroupSystem([
 				'ID' => 'menu_teamwork',

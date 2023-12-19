@@ -260,7 +260,8 @@ class Sender
 				));
 				if ($config->getIsOauth() && \CModule::includeModule('mail'))
 				{
-					$token = \Bitrix\Mail\Helper\OAuth::getTokenByMeta($config->getPassword());
+					$expireGapSeconds = self::getOAuthTokenExpireGapSeconds();
+					$token = \Bitrix\Mail\Helper\OAuth::getTokenByMeta($config->getPassword(), $expireGapSeconds);
 					$config->setPassword($token);
 				}
 			}
@@ -599,6 +600,15 @@ class Sender
 		$mailboxes[$userId] = array_values($mailboxes[$userId]);
 
 		return $mailboxes[$userId];
+	}
+
+	private static function getOAuthTokenExpireGapSeconds(): int
+	{
+		// we use 55 minutes because providers give tokens for 1 hour or more,
+		// 5 minutes is left for not refresh token too frequent, for mass send
+		$default = isModuleInstalled('bitrix24') ? 55 * 60 : 10;
+
+		return (int)Main\Config\Option::get('main', '~oauth_token_expire_gap_seconds', $default);
 	}
 
 }

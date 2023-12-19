@@ -8,7 +8,9 @@ use Bitrix\Sale\Delivery\CalculationResult;
 use Bitrix\Sale\Shipment;
 use Sale\Handlers\Delivery\YandexTaxi\Api\Api;
 use Sale\Handlers\Delivery\YandexTaxi\Api\RequestEntity\Address;
+use Sale\Handlers\Delivery\YandexTaxi\Api\RequestEntity\ClientRequirements;
 use Sale\Handlers\Delivery\YandexTaxi\Api\RequestEntity\Estimation;
+use Sale\Handlers\Delivery\YandexTaxi\Api\RequestEntity\OfferEstimation;
 use Sale\Handlers\Delivery\YandexTaxi\Api\RequestEntity\TransportClassification;
 use Sale\Handlers\Delivery\YandexTaxi\ClaimBuilder\ClaimBuilder;
 
@@ -75,16 +77,35 @@ final class RateCalculator
 		/** @var Address $addressFrom */
 		$addressTo = $addressToResult->getData()['ADDRESS'];
 
-		$buildClientReqResult = $this->claimBuilder->buildClientRequirements($shipment);
+		$tariffResult = $this->claimBuilder->getTaxiClass($shipment);
+
+		if (!$tariffResult->isSuccess())
+		{
+			return $result->addErrors(
+				$this->getFormattedErrors($tariffResult->getErrors())
+			);
+		}
+
+		$taxiClass = $tariffResult->getData()['tariff']['name'];
+
+		if (ClaimBuilder::isOffersCalculateMethod($taxiClass))
+		{
+			$buildClientReqResult = $this->claimBuilder->buildClientRequirements($shipment);
+		}
+		else
+		{
+			$buildClientReqResult = $this->claimBuilder->buildTransportClassification($shipment);
+		}
+
 		if (!$buildClientReqResult->isSuccess())
 		{
 			return $result->addErrors($buildClientReqResult->getErrors());
 		}
-		/** @var TransportClassification $clientRequirements */
+		/** @var ClientRequirements|TransportClassification $clientRequirements */
 		$clientRequirements = $buildClientReqResult->getData()['REQUIREMENTS'];
 
 		$isTariffAvailable = $this->tariffsChecker->isTariffAvailableByShipment(
-			$clientRequirements->getTaxiClass(),
+			$taxiClass,
 			$shipment
 		);
 
@@ -111,22 +132,37 @@ final class RateCalculator
 			);
 		}
 
-		$estimationRequest = (new Estimation())
+		if ($clientRequirements instanceof ClientRequirements)
+		{
+			$estimationRequest = new OfferEstimation();
+		}
+		else
+		{
+			$estimationRequest = new Estimation();
+		}
+
+		$estimationRequest
 			->addRoutePoint($addressFrom)
 			->addRoutePoint($addressTo)
-			->setRequirements($clientRequirements);
+		;
 
 		foreach ($shippingItemCollection as $shippingItem)
 		{
 			$estimationRequest->addItem($shippingItem);
 		}
 
-		if (!$this->claimBuilder->isDoorDeliveryRequired($shipment))
+		if ($clientRequirements instanceof ClientRequirements)
 		{
-			$estimationRequest->setSkipDoorToDoor(true);
+			$estimationRequest->setRequirements($clientRequirements);
+			$priceResult = $this->api->offersCalculate($estimationRequest);
+		}
+		else
+		{
+			$estimationRequest->setSkipDoorToDoor(!$this->claimBuilder->isDoorDeliveryRequired($shipment));
+			$estimationRequest->setRequirements($clientRequirements);
+			$priceResult = $this->api->checkPrice($estimationRequest);
 		}
 
-		$priceResult = $this->api->checkPrice($estimationRequest);
 		if (!$priceResult->isSuccess())
 		{
 			return $result->addError(
@@ -145,6 +181,11 @@ final class RateCalculator
 		}
 
 		$result->setDeliveryPrice($priceResult->getPrice());
+		$resultData = $priceResult->getData();
+		if (isset($resultData))
+		{
+			$result->setData($resultData);
+		}
 
 		return $result;
 	}

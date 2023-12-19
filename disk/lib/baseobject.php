@@ -1320,6 +1320,11 @@ abstract class BaseObject extends Internals\Model implements \JsonSerializable
 	 */
 	public static function isUniqueName($name, $underObjectId, $excludeId = null, &$opponentId = null)
 	{
+		if ($underObjectId === null)
+		{
+			return true;
+		}
+
 		$parameters = array(
 			'select' => array('NAME'),
 			'filter' => array(

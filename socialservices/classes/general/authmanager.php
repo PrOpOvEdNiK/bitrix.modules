@@ -1,6 +1,8 @@
 <?php
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Context;
+use Bitrix\Main\HttpResponse;
+use Bitrix\Main\Application;
 use Bitrix\Socialservices\ContactTable;
 use Bitrix\Socialservices\UserTable;
 
@@ -966,6 +968,9 @@ class CSocServAuth
 
 	protected $userId = null;
 
+	public const OPENER_MODE = 'opener';
+	public const MOBILE_MODE = 'bx_mobile';
+
 	function __construct($userId = null)
 	{
 		global $USER;
@@ -1433,11 +1438,11 @@ class CSocServAuth
 						if($this->allowChangeOwner)
 						{
 							$dbSocUser = UserTable::getList(array(
-									'filter' => array(
-											'=USER_ID' => $USER->GetID(),
-											'=EXTERNAL_AUTH_ID' => $socservUserFields['EXTERNAL_AUTH_ID']
-									),
-									'select' => array("ID")
+								'filter' => array(
+									'=USER_ID' => $USER->GetID(),
+									'=EXTERNAL_AUTH_ID' => $socservUserFields['EXTERNAL_AUTH_ID']
+								),
+								'select' => array("ID")
 							));
 							if($dbSocUser->fetch())
 							{
@@ -1664,6 +1669,38 @@ class CSocServAuth
 	{
 		return COption::GetOptionString("main", "new_user_registration", "N") === "Y"
 			&& COption::GetOptionString("socialservices", "allow_registration", "Y") === "Y";
+	}
+
+	protected function onAfterMobileAuth()
+	{
+		$params = http_build_query([
+			'mode' => self::MOBILE_MODE,
+		]);
+
+		$httpResponse = new HttpResponse();
+		$httpResponse->addHeader('Location', 'bitrix24://?' . $params);
+		Application::getInstance()->end(0, $httpResponse);
+	}
+
+	protected function onAfterWebAuth($addParams, $mode, $url)
+	{
+		if($addParams)
+		{
+			$location = ($mode === self::OPENER_MODE) ? 'if(window.opener) window.opener.location = \''.$url.'\'; window.close();' : ' window.location = \''.$url.'\';';
+		}
+		else
+		{
+			//fix for chrome
+			$location = ($mode === self::OPENER_MODE) ? 'if(window.opener) window.opener.location = window.opener.location.href + \''.$url.'\'; window.close();' : ' window.location = window.location.href + \''.$url.'\';';
+		}
+
+		$JSScript = '
+			<script type="text/javascript">
+			'.$location.'
+			</script>
+			';
+
+		echo $JSScript;
 	}
 }
 

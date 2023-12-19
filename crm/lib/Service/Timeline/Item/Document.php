@@ -212,7 +212,7 @@ final class Document extends Configurable
 						->setAction(
 							(new Layout\Action\JsEvent('Document:ConvertDeal'))
 								->addActionParamInt('documentId', $this->getDocumentId())
-								->setAnimation(Layout\Action\Animation::showLoaderForBlock())
+								->setAnimation(Layout\Action\Animation::disableBlock())
 						)
 						->setScopeWeb()
 					;
@@ -258,7 +258,7 @@ final class Document extends Configurable
 		else
 		{
 			// if the button is clicked, wait until transformation is complete and the timeline item is updated on push
-			$action->setAnimation(Layout\Action\Animation::showLoaderForBlock()->setForever());
+			$action->setAnimation(Layout\Action\Animation::disableBlock()->setForever());
 		}
 
 		return

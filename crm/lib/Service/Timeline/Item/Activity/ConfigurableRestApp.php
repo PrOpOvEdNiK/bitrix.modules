@@ -112,10 +112,15 @@ class ConfigurableRestApp extends Activity
 			return null;
 		}
 
-		return Layout\Common\Logo::getInstance($logoCode)
+		$logo = Layout\Common\Logo::getInstance($logoCode)
 			->createLogo()
-			->setAction($this->createAction($body->logo->action))
 		;
+		if (!$logo)
+		{
+			return null;
+		}
+
+		return $logo->setAction($this->createAction($body->logo->action));
 	}
 
 	public function getContentBlocks(): array

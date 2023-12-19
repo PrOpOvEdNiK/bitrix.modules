@@ -109,7 +109,7 @@ class ElementFilterFields
 			PropertyTable::TYPE_STRING => 'string',
 			PropertyTable::TYPE_NUMBER => 'number',
 			PropertyTable::TYPE_LIST => 'list',
-			'S:directory' => 'list',
+			PropertyTable::TYPE_STRING . ':' . PropertyTable::USER_TYPE_DIRECTORY => 'list',
 		];
 
 		$iterator = PropertyTable::getList([
@@ -140,7 +140,7 @@ class ElementFilterFields
 			$fullType =
 				empty($row['USER_TYPE'])
 					? $row['PROPERTY_TYPE']
-					: "{$row['PROPERTY_TYPE']}:{$row['USER_TYPE']}"
+					: $row['PROPERTY_TYPE'] . ':' . $row['USER_TYPE']
 			;
 
 			$fieldType = $typesMap[$fullType] ?? null;
@@ -181,8 +181,6 @@ class ElementFilterFields
 			],
 			[
 				'IBLOCK_ID' => $this->iblockId,
-				'ACTIVE' => 'Y',
-				'GLOBAL_ACTIVE' => 'Y',
 				'CHECK_PERMISSIONS' => 'Y',
 				'MIN_PERMISSION' => 'R',
 			],

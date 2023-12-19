@@ -2516,7 +2516,7 @@ class CCrmDocument
 
 	protected static function getVirtualFields(): array
 	{
-		return [
+		$fields = [
 			'CRM_ID' => [
 				'Name' => GetMessage('CRM_DOCUMENT_FIELD_CRM_ID'),
 				'Type' => 'string',
@@ -2530,6 +2530,20 @@ class CCrmDocument
 				'Type' => 'string',
 			],
 		];
+
+		// remove after bizproc 23.400.0 has delivered
+		if (defined('Bitrix\Bizproc\FieldType::TIME'))
+		{
+			$fields['TIME_CREATE'] = [
+				'Name' => Loc::getMessage('CRM_DOCUMENT_FIELD_TIME_CREATE'),
+				'Type' => 'time',
+				'Filterable' => true,
+				'Editable' => false,
+				'Required' => false,
+			];
+		}
+
+		return $fields;
 	}
 
 	protected static function getAssignedByFields()

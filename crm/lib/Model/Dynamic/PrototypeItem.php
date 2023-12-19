@@ -4,10 +4,12 @@ namespace Bitrix\Crm\Model\Dynamic;
 
 use Bitrix\Crm\CompanyTable;
 use Bitrix\Crm\ContactTable;
+use Bitrix\Crm\FieldContext\Repository;
 use Bitrix\Crm\Model\AssignedTable;
 use Bitrix\Crm\ProductRowTable;
 use Bitrix\Crm\Service\Container;
 use Bitrix\Main;
+use Bitrix\Main\Config\Option;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM;
 use Bitrix\Main\ORM\Event;
@@ -286,6 +288,16 @@ abstract class PrototypeItem extends Main\UserField\Internal\PrototypeItemDataMa
 		);
 	}
 
+	public static function getFieldsContextDataClass(): string
+	{
+		$typeData = static::getType();
+
+		return \Bitrix\Main\DI\ServiceLocator::getInstance()
+			->get('crm.type.factory')
+			->getItemFieldsContextDataClass($typeData)
+		;
+	}
+
 	public static function onAfterUpdate(Event $event): ORM\EventResult
 	{
 		$result = parent::onAfterUpdate($event);
@@ -315,6 +327,11 @@ abstract class PrototypeItem extends Main\UserField\Internal\PrototypeItemDataMa
 			$id = static::getTemporaryStorage()->getIdByPrimary($event->getParameter('primary'));
 
 			static::getFullTextDataClass()::delete($id);
+
+			if (Repository::hasFieldsContextTables())
+			{
+				static::getFieldsContextDataClass()::deleteByItemId($id);
+			}
 		}
 
 		return $result;

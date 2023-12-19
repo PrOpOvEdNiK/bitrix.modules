@@ -49,6 +49,7 @@ class Rest extends \IRestService
 				'imopenlines.dialog.get' => [__CLASS__, 'dialogGet'],
 				'imopenlines.dialog.user.depersonalization' => ['callback' => [__CLASS__, 'dialogUserDepersonalization'], 'options' => ['private' => true]],
 				'imopenlines.dialog.form.send' => [__CLASS__, 'dialogFormSend'],
+				'imopenlines.dialog.multi.get' => [__CLASS__, 'getMultiDialogs'],
 
 				'imopenlines.operator.answer' => [__CLASS__, 'operatorAnswer'],
 				'imopenlines.operator.skip' => [__CLASS__, 'operatorSkip'],
@@ -82,6 +83,7 @@ class Rest extends \IRestService
 				'imopenlines.bot.session.message.send' => [__CLASS__, 'botSessionSendAutoMessage'],
 				'imopenlines.bot.session.transfer' => [__CLASS__, 'botSessionTransfer'],
 				'imopenlines.bot.session.finish' => [__CLASS__, 'botSessionFinish'],
+				'imopenlines.bot.session.dialog.new' => [__CLASS__, 'botSessionNew'],
 
 				'imopenlines.network.join' => [__CLASS__, 'networkJoin'],
 				'imopenlines.network.message.add' => [__CLASS__, 'networkMessageAdd'],
@@ -239,6 +241,30 @@ class Rest extends \IRestService
 		]);
 	}
 
+	public static function getMultiDialogs($params, $n, \CRestServer $server)
+	{
+		$params = array_change_key_case($params, CASE_UPPER);
+
+		if (!Loader::includeModule('im'))
+		{
+			throw new RestException('Messenger is not installed.', 'IM_NOT_INSTALLED', \CRestServer::STATUS_WRONG_REQUEST);
+		}
+
+		$chatId = self::getChatId($params);
+		if (!$chatId)
+		{
+			throw new RestException('You do not have access to the specified dialog', 'ACCESS_ERROR', \CRestServer::STATUS_WRONG_REQUEST);
+		}
+
+		if (!\Bitrix\ImOpenLines\Chat::hasAccess($chatId))
+		{
+			throw new RestException('You do not have access to the specified dialog', 'ACCESS_ERROR', \CRestServer::STATUS_WRONG_REQUEST);
+		}
+
+		$control = new Operator($chatId);
+		return $control->getMultiDialogs();
+	}
+
 	public static function dialogUserDepersonalization($params, $n, \CRestServer $server)
 	{
 		$params = array_change_key_case($params, CASE_UPPER);
@@ -305,7 +331,6 @@ class Rest extends \IRestService
 		{
 			throw new RestException($control->getError()->msg, $control->getError()->code, \CRestServer::STATUS_WRONG_REQUEST);
 		}
-
 
 		return true;
 	}
@@ -813,6 +838,27 @@ class Rest extends \IRestService
 		$chat->finish();
 
 		return true;
+	}
+
+	public static function botSessionNew($arParams, $n, \CRestServer $server)
+	{
+		if (!isset($arParams['CHAT_ID']))
+		{
+			throw new RestException('Param CHAT_ID is empty', 'EMPTY_CHAT_ID', \CRestServer::STATUS_WRONG_REQUEST);
+		}
+
+		if (!isset($arParams['OPERATOR_ID']))
+		{
+			throw new RestException('Param OPERATOR_ID is empty', 'EMPTY_OPERATOR_ID', \CRestServer::STATUS_WRONG_REQUEST);
+		}
+
+		if (!isset($arParams['MESSAGE_ID']))
+		{
+			throw new RestException('Param MESSAGE_ID is empty', 'EMPTY_MESSAGE_ID', \CRestServer::STATUS_WRONG_REQUEST);
+		}
+
+		$control = new \Bitrix\ImOpenLines\Operator($arParams['CHAT_ID'], $arParams['OPERATOR_ID']);
+		return $control->openNewDialogByMessage($arParams['MESSAGE_ID']);
 	}
 
 	/**

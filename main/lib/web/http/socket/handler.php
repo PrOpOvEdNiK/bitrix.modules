@@ -229,12 +229,7 @@ class Handler extends Http\Handler
 		}
 		catch (\RuntimeException $e)
 		{
-			throw new Http\NetworkException($this->request, $error);
-		}
-
-		if ($this->socket->timedOut())
-		{
-			throw new Http\NetworkException($this->request, 'Stream writing timeout has been reached.');
+			throw new Http\NetworkException($this->request, $error . ' ' . $e->getMessage());
 		}
 
 		return $result;
@@ -262,7 +257,9 @@ class Handler extends Http\Handler
 
 		// blocking is critical for headers
 		$this->socket->setBlocking();
+
 		$this->write($requestHeaders, 'Error sending CONNECT to proxy.');
+
 		$this->socket->setBlocking(false);
 	}
 
@@ -322,11 +319,13 @@ class Handler extends Http\Handler
 	{
 		while (!$this->socket->eof())
 		{
-			$line = $this->socket->gets();
-
-			if ($this->socket->timedOut())
+			try
 			{
-				throw new Http\NetworkException($this->request, 'Stream reading timeout has been reached.');
+				$line = $this->socket->gets();
+			}
+			catch (\RuntimeException $e)
+			{
+				throw new Http\NetworkException($this->request, $e->getMessage());
 			}
 
 			if ($line === false)
@@ -369,11 +368,6 @@ class Handler extends Http\Handler
 			catch (\RuntimeException $e)
 			{
 				throw new Http\NetworkException($request, 'Stream reading error.');
-			}
-
-			if ($this->socket->timedOut())
-			{
-				throw new Http\NetworkException($request, 'Stream reading timeout has been reached.');
 			}
 
 			if ($buf === '')
@@ -447,6 +441,7 @@ class Handler extends Http\Handler
 				'socketTimeout' => $options['socketTimeout'] ?? null,
 				'streamTimeout' => $options['streamTimeout'] ?? null,
 				'contextOptions' => $contextOptions,
+				'async' => $options['async'] ?? null,
 			]
 		);
 

@@ -31,7 +31,20 @@ use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
  * </ul>
  *
  * @package Bitrix\BIConnector
- **/
+ *
+ * DO NOT WRITE ANYTHING BELOW THIS
+ *
+ * <<< ORMENTITYANNOTATION
+ * @method static EO_Log_Query query()
+ * @method static EO_Log_Result getByPrimary($primary, array $parameters = [])
+ * @method static EO_Log_Result getById($id)
+ * @method static EO_Log_Result getList(array $parameters = [])
+ * @method static EO_Log_Entity getEntity()
+ * @method static \Bitrix\BIConnector\EO_Log createObject($setDefaultValues = true)
+ * @method static \Bitrix\BIConnector\EO_Log_Collection createCollection()
+ * @method static \Bitrix\BIConnector\EO_Log wakeUpObject($row)
+ * @method static \Bitrix\BIConnector\EO_Log_Collection wakeUpCollection($rows)
+ */
 
 class LogTable extends DataManager
 {
