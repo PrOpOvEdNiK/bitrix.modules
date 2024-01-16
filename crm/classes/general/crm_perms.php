@@ -18,15 +18,11 @@ class CCrmPerms
 	const ATTR_READ_ALL = 'RA';
 
 	private static $INSTANCES = array();
-	protected $cdb = null;
 	protected $userId = 0;
 	protected $arUserPerms = array();
 
 	function __construct($userId)
 	{
-		global $DB;
-		$this->cdb = $DB;
-
 		$this->userId = intval($userId);
 		$this->arUserPerms = CCrmRole::GetUserPerms($this->userId);
 	}

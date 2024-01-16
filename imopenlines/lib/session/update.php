@@ -297,7 +297,7 @@ class Update
 			&& $this->session->getSessionField('CRM_ACTIVITY_ID')
 		)
 		{
-			$crmManager = new Crm($this->session);
+			$crmManager = $this->session->getCrmManager();
 			if ($crmManager->isLoaded())
 			{
 				$crmManager->setSessionDataClose($this->updateDateCrmClose);
@@ -462,7 +462,7 @@ class Update
 					$dateCheckClose->add($this->session->getConfig('AUTO_CLOSE_TIME').' SECONDS');
 					$dateCheckClose->add('1 DAY');
 
-					$crmManager = new Crm($this->session);
+					$crmManager = $this->session->getCrmManager();
 					if ($crmManager->isLoaded())
 					{
 						$crmManager->setSessionDataClose($dateCheckClose);
@@ -731,6 +731,7 @@ class Update
 			if ($config)
 			{
 				$this->session->setConfig($config);
+				$this->updateChatSession['LINE_ID'] = $this->newData['CONFIG_ID'];
 			}
 			else
 			{

@@ -35,11 +35,16 @@ class GridHeaders
 		return $this;
 	}
 
-	public function append(array &$headers): void
+	public function append(array &$headers, array $fieldNames = []): void
 	{
 		$userFields = $this->userType->GetAbstractFields();
 		foreach ($userFields as $fieldName => $userField)
 		{
+			if (!empty($fieldNames) && !in_array($fieldName, $fieldNames, true))
+			{
+				continue;
+			}
+
 			$headerData = $this->getHeaderData($fieldName, $userField);
 			if (!$headerData)
 			{

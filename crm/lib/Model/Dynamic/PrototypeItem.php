@@ -46,6 +46,7 @@ abstract class PrototypeItem extends Main\UserField\Internal\PrototypeItemDataMa
 
 			(new StringField('XML_ID'))
 				->configureTitle(Loc::getMessage('CRM_TYPE_ITEM_FIELD_XML_ID'))
+				->configureDefaultValue('')
 			,
 
 			$fieldRepository->getTitle(),
@@ -82,17 +83,22 @@ abstract class PrototypeItem extends Main\UserField\Internal\PrototypeItemDataMa
 
 			(new StringField('PREVIOUS_STAGE_ID'))
 				->configureTitle(Loc::getMessage('CRM_TYPE_ITEM_FIELD_PREVIOUS_STAGE_ID'))
+				->configureDefaultValue('')
 			,
 
 			$fieldRepository->getBeginDate(),
 
 			$fieldRepository->getCloseDate(),
 
-			$fieldRepository->getCompanyId(),
+			$fieldRepository->getCompanyId()
+				->configureDefaultValue(0)
+			,
 
 			(new Reference('COMPANY', CompanyTable::class, Join::on('this.COMPANY_ID', 'ref.ID'))),
 
-			$fieldRepository->getContactId(),
+			$fieldRepository->getContactId()
+				->configureDefaultValue(0)
+			,
 
 			(new Reference('CONTACT', ContactTable::class, Join::on('this.CONTACT_ID', 'ref.ID'))),
 
@@ -140,9 +146,13 @@ abstract class PrototypeItem extends Main\UserField\Internal\PrototypeItemDataMa
 
 			$fieldRepository->getSourceId(),
 
-			$fieldRepository->getSourceDescription(),
+			$fieldRepository->getSourceDescription()
+				->configureDefaultValue('')
+			,
 
-			$fieldRepository->getWebformId(),
+			$fieldRepository->getWebformId()
+				->configureDefaultValue(0)
+			,
 
 			// $fieldRepository->getLastActivityBy(),
 			//

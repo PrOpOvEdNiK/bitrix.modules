@@ -175,4 +175,9 @@ final class ActivityFastsearchFiller
 	{
 		Option::delete('crm', ['name' => self::LAST_ID_OPTION_NAME]);
 	}
+
+	public static function isRunning(): bool
+	{
+		return Option::get('crm', self::LAST_ID_OPTION_NAME, null) !== null;
+	}
 }

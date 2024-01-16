@@ -47,15 +47,8 @@ $DBName = '';
 // need to be after dbconn.php
 require_once __DIR__ . '/include/constants.php';
 
-$connectionType = $application->getConnection()->getType();
-
-\Bitrix\Main\Loader::registerAutoLoadClasses(
-	'main',
-	[
-		'CDatabase' => 'classes/' . $connectionType . '/database.php',
-		'CDBResult' => 'classes/' . $connectionType . '/dbresult.php',
-	]
-);
+// Database-dependent classes
+CAllDatabase::registerAutoload();
 
 // From here global variable $DB is available (CDatabase class)
 $GLOBALS['DB'] = new CDatabase();

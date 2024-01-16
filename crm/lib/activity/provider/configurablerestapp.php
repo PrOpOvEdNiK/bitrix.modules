@@ -2,6 +2,7 @@
 
 namespace Bitrix\Crm\Activity\Provider;
 
+use Bitrix\Crm\Activity\Entity\AppTypeTable;
 use Bitrix\Crm\Badge;
 use Bitrix\Crm\Badge\Model\BadgeTable;
 use Bitrix\Crm\ItemIdentifier;
@@ -44,11 +45,18 @@ class ConfigurableRestApp extends Base
 	 */
 	public static function getTypesFilterPresets()
 	{
-		return [
-			[
-				'NAME' => Loc::getMessage('CRM_ACTIVITY_PROVIDER_CONFIGURABLE_REST_APP_NAME'),
-			],
+		$userTypes = AppTypeTable::query()
+			->addSelect('TYPE_ID', 'PROVIDER_TYPE_ID')
+			->addSelect('NAME')
+			->where('IS_CONFIGURABLE_TYPE', 'Y')
+			->setCacheTtl(60)
+			->fetchAll();
+
+		$userTypes[] = [
+			'NAME' => Loc::getMessage('CRM_ACTIVITY_PROVIDER_CONFIGURABLE_REST_APP_NAME'),
 		];
+
+		return $userTypes;
 	}
 
 	public static function getTypes()

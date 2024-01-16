@@ -5,7 +5,7 @@ namespace Bitrix\Crm\Counter\ProblemDetector;
 class ProblemList
 {
 	/** @var Problem[] */
-	private array $problems;
+	private array $problems = [];
 
 	public function add(Problem $problem): void
 	{

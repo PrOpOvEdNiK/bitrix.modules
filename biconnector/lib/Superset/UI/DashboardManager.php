@@ -42,4 +42,15 @@ final class DashboardManager
 			]
 		]);
 	}
+
+	public static function notifySupersetUnfreeze(): void
+	{
+		if (Loader::includeModule('pull'))
+		{
+			\CPullWatch::AddToStack('superset_dashboard', [
+				'module_id' => 'biconnector',
+				'command' => 'onSupersetUnfreeze',
+			]);
+		}
+	}
 }

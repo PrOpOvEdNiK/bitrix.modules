@@ -74,7 +74,7 @@ final class RateCalculator
 				$this->getFormattedErrors($addressToResult->getErrors())
 			);
 		}
-		/** @var Address $addressFrom */
+		/** @var Address $addressTo */
 		$addressTo = $addressToResult->getData()['ADDRESS'];
 
 		$tariffResult = $this->claimBuilder->getTaxiClass($shipment);
@@ -142,8 +142,8 @@ final class RateCalculator
 		}
 
 		$estimationRequest
-			->addRoutePoint($addressFrom)
-			->addRoutePoint($addressTo)
+			->addRoutePoint($addressFrom->setId(ClaimBuilder::SOURCE_ROUTE_POINT_ID))
+			->addRoutePoint($addressTo->setId(ClaimBuilder::DESTINATION_ROUTE_POINT_ID))
 		;
 
 		foreach ($shippingItemCollection as $shippingItem)

@@ -102,9 +102,10 @@ abstract class Configurable extends Item
 			'type' => $this->getType(),
 			'id' => $this->getModel()->getId(),
 			'payload' => $this->getPayload(),
-			'timestamp' => $this->getModel()->getDate() ? $this->getModel()->getDate()->getTimestamp() : null,
+			'timestamp' => $this->getModel()->getDate()?->getTimestamp(),
 			'sort' => $this->getSort(),
 			'languageId' => \Bitrix\Main\Context::getCurrent()?->getLanguage(),
+			'targetUsersList' => $this->getListOfTargetUsers(),
 			'canBeReloaded' => $this->canBeReloaded(),
 		];
 	}
@@ -556,6 +557,26 @@ abstract class Configurable extends Item
 	public function getNoteItemId(): int
 	{
 		return $this->model->getId();
+	}
+
+	/**
+	 * Returns list of user ids that this item was built for
+	 *
+	 * @return int[]
+	 */
+	protected function getListOfTargetUsers(): array
+	{
+		if ($this->isBuiltOnlyForCurrentUser())
+		{
+			return [$this->getContext()->getUserId()];
+		}
+
+		return [];
+	}
+
+	protected function isBuiltOnlyForCurrentUser(): bool
+	{
+		return false;
 	}
 
 	/**

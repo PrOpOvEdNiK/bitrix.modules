@@ -17,7 +17,7 @@ final class Add implements SyncCommand
 
 	public function execute(): void
 	{
-		$this->activityFastsearchRepo->add($this->data->toORMArray());
+		$this->activityFastsearchRepo->upsert($this->data->toORMArray());
 	}
 
 }

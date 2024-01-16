@@ -35,7 +35,6 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\PhoneNumber;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Web\Uri;
-use CCrmActivity;
 use CCrmActivityDirection;
 use CCrmDateTimeHelper;
 use CCrmFieldMulti;
@@ -678,7 +677,6 @@ class Call extends Activity
 		$ownerTypeId = $this->getContext()->getIdentifier()->getEntityTypeId();
 		$ownerId = $this->getContext()->getIdentifier()->getEntityId();
 		$activityId = $this->getActivityId();
-		$responsibleId = $this->getAssociatedEntityModel()?->get('RESPONSIBLE_ID');
 
 		// don't show the button
 		//	- if call processing with AI not enabled
@@ -688,11 +686,7 @@ class Call extends Activity
 		//	- OR if the entity is closed
 		//	- OR if there is another entity that is selected as target for this call
 		$isButtonVisible = AIManager::isAiCallProcessingEnabled()
-			&& CCrmActivity::CheckUpdatePermission(
-				$ownerTypeId,
-				$ownerId,
-				Container::getInstance()->getUserPermissions($responsibleId)->getCrmPermissions(),
-			)
+			&& $this->hasUpdatePermission()
 			&& in_array($ownerTypeId, AIManager::SUPPORTED_ENTITY_TYPE_IDS, true)
 			&& count($this->fetchAudioRecordList()) > 0
 			&& !$this->getContext()->isClosedEntity()

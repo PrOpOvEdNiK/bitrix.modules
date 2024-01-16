@@ -61,16 +61,15 @@ class CSocServGoogleOAuth extends CSocServAuth
 	{
 		$url = static::getUrl('opener', null, $arParams);
 
-		$phrase = ($arParams["FOR_INTRANET"]) ? GetMessage("socserv_google_form_note_intranet") : GetMessage("socserv_google_form_note");
-
-		if($arParams["FOR_INTRANET"])
+		$isForIntranet = $params['FOR_INTRANET'] ?? false;
+		if ($isForIntranet)
 		{
 			return array("ON_CLICK" => 'onclick="BX.util.popup(\''.htmlspecialcharsbx(CUtil::JSEscape($url)).'\', 580, 400)"');
 		}
-		else
-		{
-			return '<a href="javascript:void(0)" onclick="BX.util.popup(\''.htmlspecialcharsbx(CUtil::JSEscape($url)).'\', 580, 400)" class="bx-ss-button google-button"></a><span class="bx-spacer"></span><span>'.$phrase.'</span>';
-		}
+
+		$phrase = $isForIntranet ? GetMessage("socserv_google_form_note_intranet") : GetMessage("socserv_google_form_note");
+
+		return '<a href="javascript:void(0)" onclick="BX.util.popup(\''.htmlspecialcharsbx(CUtil::JSEscape($url)).'\', 580, 400)" class="bx-ss-button google-button"></a><span class="bx-spacer"></span><span>'.$phrase.'</span>';
 	}
 
 	public function GetOnClickJs($arParams)
@@ -112,7 +111,7 @@ class CSocServGoogleOAuth extends CSocServAuth
 					.'&mode='.$location.(isset($arParams['BACKURL'])
 						? '&redirect_url='.urlencode($arParams['BACKURL'])
 						: '')
-				));
+			));
 		}
 		else
 		{

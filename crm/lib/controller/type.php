@@ -151,7 +151,7 @@ class Type extends Base
 		}
 		$originalFields = $fields;
 		$fields = $this->convertKeysToUpper($fields);
-		$fieldKeysToUnset = ['ID', 'IS_EXTERNAL', 'CREATED_TIME', 'CREATED_BY', 'UPDATED_TIME', 'UPDATED_BY'];
+		$fieldKeysToUnset = ['ID', 'IS_EXTERNAL', 'CREATED_TIME', 'CREATED_BY', 'UPDATED_TIME', 'UPDATED_BY', 'IS_SAVE_FROM_TYPE_DETAIL'];
 
 		$isNew = $type->getId() <= 0;
 		$restriction = RestrictionManager::getDynamicTypesLimitRestriction();
@@ -188,6 +188,15 @@ class Type extends Base
 		}
 
 		$existingCustomSections = $this->moveIdToKey(Integration\IntranetManager::getCustomSections() ?? []);
+
+		// disable deletion of smart processes if saving occurs not due to crm.type.detail
+		$isSaveFromTypeDetail = isset($fields['IS_SAVE_FROM_TYPE_DETAIL']) && $fields['IS_SAVE_FROM_TYPE_DETAIL'] === 'true';
+		if (!$isSaveFromTypeDetail)
+		{
+			$customSections = $this->getAugmentedCustomSections($customSections, $existingCustomSections);
+			$fields['CUSTOM_SECTIONS'] = $this->getCustomSectionsArray($customSections);
+		}
+
 		foreach ($existingCustomSections as $id => $section)
 		{
 			if (!isset($customSections[$id]) && !empty($section->getPages()))
@@ -256,6 +265,65 @@ class Type extends Base
 
 		$this->addErrors($result->getErrors());
 		return null;
+	}
+
+	/**
+	 * $customSections items must be with id in key
+	 *
+	 * @param CustomSection[] $customSections
+	 * @param CustomSection[] $customSectionsToAdd
+	 * @return CustomSection[]
+	 */
+	protected function getAugmentedCustomSections(array $customSections, array $customSectionsToAdd): array
+	{
+		foreach ($customSectionsToAdd as $id => $customSectionToAdd)
+		{
+			if (!isset($customSections[$id]))
+			{
+				$customSections[$id] = $customSectionToAdd;
+			}
+		}
+
+		return $customSections;
+	}
+
+	protected function getCustomSectionsArray(array $customSections): array
+	{
+		$customSectionsArray = [];
+
+		foreach ($customSections as $customSection)
+		{
+			if (is_array($customSection))
+			{
+				$customSectionsArray[] = $customSection;
+			}
+
+			if ($customSection instanceof CustomSection)
+			{
+				$pages = [];
+
+				foreach ($customSection->getPages() as $page)
+				{
+					$pages[] = [
+						'ID' => $page->getId(),
+						'CUSTOM_SECTION_ID' => $page->getCustomSectionId(),
+						'CODE' => $page->getCode(),
+						'TITLE' => $page->getTitle(),
+						'SORT' => $page->getSort(),
+						'SETTINGS' => $page->getSettings(),
+					];
+				}
+
+				$customSectionsArray[] = [
+					'ID' => $customSection->getId(),
+					'TITLE' => $customSection->getTitle(),
+					'CODE' => $customSection->getCode(),
+					'PAGES' => $pages,
+				];
+			}
+		}
+
+		return $customSectionsArray;
 	}
 
 	public function deleteAction(?Dynamic\Type $type = null): ?array

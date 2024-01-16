@@ -462,14 +462,17 @@ class CIBlockPropertyDateTime
 
 	/**
 	 * @param array $property
-	 * @param array $strHTMLControlName
+	 * @param array $control
 	 * @param array &$fields
 	 * @return void
 	 */
-	public static function GetUIFilterProperty($property, $strHTMLControlName, &$fields)
+	public static function GetUIFilterProperty($property, $control, &$fields)
 	{
 		$fields['type'] = 'date';
 		$fields['time'] = true;
+		$fields['data'] = [
+			'time' => true,
+		];
 		$fields['filterable'] = '';
 		$fields['operators'] = [
 			'default' => '=',

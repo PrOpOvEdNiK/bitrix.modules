@@ -19,6 +19,13 @@ class Callback extends Controller
 
 	public function enableSupersetAction(): void
 	{
+		if (SupersetInitializer::getSupersetStatus() === SupersetInitializer::SUPERSET_STATUS_FROZEN)
+		{
+			SupersetInitializer::unfreezeSuperset();
+
+			return;
+		}
+
 		$context = Context::getCurrent();
 
 		$responseBody = $context->getRequest()->getJsonList();

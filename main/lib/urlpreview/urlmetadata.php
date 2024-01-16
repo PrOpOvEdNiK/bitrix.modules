@@ -125,4 +125,19 @@ class UrlMetadataTable extends Entity\DataManager
 			}
 		}
 	}
+
+	public static function onDelete(Event $event)
+	{
+		$parameters = $event->getParameters();
+
+		$currentValues = static::getList([
+			'select' => ['IMAGE_ID'],
+			'filter' => ['=ID' => $parameters['id']],
+		])->fetch();
+
+		if ($currentValues['IMAGE_ID'] > 0)
+		{
+			\CFile::Delete($currentValues['IMAGE_ID']);
+		}
+	}
 }

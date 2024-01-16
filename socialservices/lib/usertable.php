@@ -87,7 +87,6 @@ class UserTable extends Entity\DataManager
 			),
 			'PERMISSIONS' => array(
 				'data_type' => 'string',
-				'serizalized' => true,
 			),
 			'OATOKEN' => array(
 				'data_type' => '\\Bitrix\\Socialservices\\EncryptedToken\\CryptoField',
@@ -133,7 +132,7 @@ class UserTable extends Entity\DataManager
 			{
 				unset($fields[$key]);
 			}
-			elseif($map[$key]['required'] && empty($fields[$key]))
+			elseif(isset($map[$key]['required']) && $map[$key]['required'] && empty($fields[$key]))
 			{
 				unset($fields[$key]);
 			}

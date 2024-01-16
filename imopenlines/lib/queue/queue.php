@@ -37,6 +37,11 @@ abstract class Queue
 
 	protected $cacheRemoveSession = [];
 
+	protected bool $isEnableGroupByChat = false;
+
+	/** @var ImOpenLines\Crm */
+	protected $crmManager = null;
+
 	/**
 	 * @param $parameters
 	 * @return array
@@ -188,6 +193,12 @@ abstract class Queue
 			$this->config = $session->getConfig();
 			$this->chat = $session->getChat();
 		}
+	}
+
+	public function setCrmManager(ImOpenLines\Crm $crmManager): self
+	{
+		$this->crmManager = $crmManager;
+		return $this;
 	}
 
 	/**
@@ -386,13 +397,17 @@ abstract class Queue
 		return $queueTime;
 	}
 
+	public function enableGroupChat(bool $flag): self
+	{
+		$this->isEnableGroupByChat = $flag;
+		return $this;
+	}
+
 	/**
 	 * @param int $operatorId
-	 * @param \Bitrix\ImOpenLines\Crm $crmManager
-	 * @param bool $isGroupByChat
 	 * @return array
 	 */
-	public function createSession($operatorId = 0, $crmManager = null, $isGroupByChat = false)
+	public function createSession($operatorId = 0): array
 	{
 		$defaultQueueTime = $this->getQueueTime();
 
@@ -448,14 +463,14 @@ abstract class Queue
 				if (
 					$this->config['CRM'] == 'Y'
 					&& $this->config['CRM_FORWARD'] == 'Y'
-					&& !$isGroupByChat
-					&& ($crmManager instanceof ImOpenLines\Crm)
-					&& $crmManager->isLoaded()
+					&& !$this->isEnableGroupByChat
+					&& ($this->crmManager instanceof ImOpenLines\Crm)
+					&& $this->crmManager->isLoaded()
 				)
 				{
-					$crmManager->search();
+					$this->crmManager->search();
 
-					$crmOperatorId = $crmManager->getOperatorId();
+					$crmOperatorId = $this->crmManager->getOperatorId();
 
 					if (
 						$crmOperatorId !== null &&

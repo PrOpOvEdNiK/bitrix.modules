@@ -26,6 +26,11 @@ abstract class Activity extends Configurable
 		return sprintf('Activity:%s', $this->getActivityTypeId());
 	}
 
+	protected function isBuiltOnlyForCurrentUser(): bool
+	{
+		return true;
+	}
+
 	public function getSort(): array
 	{
 		if (!$this->getModel()->isScheduled())

@@ -7,14 +7,11 @@ use Bitrix\BIConnector\Superset\Dashboard\EmbeddedFilter;
 
 final class Dashboard
 {
-	public const DASHBOARD_STATUS_LOAD = 'LOAD';
-	public const DASHBOARD_STATUS_READY = 'READY';
-
 	private ?Dto\DashboardEmbeddedCredentials $embeddedCredentials = null;
 
 	public function __construct(
 		private EO_SupersetDashboard $ormObject,
-		private Dto\Dashboard $dashboardData
+		private ?Dto\Dashboard $dashboardData = null
 	)
 	{
 	}
@@ -40,7 +37,7 @@ final class Dashboard
 
 	public function getTitle(): string
 	{
-		return $this->dashboardData->title ?? '';
+		return $this->dashboardData?->title ?? $this->ormObject->getTitle();
 	}
 
 	public function getType(): string
@@ -70,17 +67,20 @@ final class Dashboard
 
 	public function getUrl(): string
 	{
-		return $this->dashboardData->url ?? '';
+		return $this->dashboardData?->url ?? '';
 	}
 
 	public function getEditUrl(): string
 	{
-		return $this->dashboardData->editUrl ?? '';
+		return $this->dashboardData?->editUrl ?? '';
 	}
 
 	public function setEditUrl(string $editUrl): self
 	{
-		$this->dashboardData->editUrl  = $editUrl;
+		if ($this->dashboardData !== null)
+		{
+			$this->dashboardData->editUrl  = $editUrl;
+		}
 
 		return $this;
 	}
@@ -107,7 +107,7 @@ final class Dashboard
 
 	public function getNativeFiltersConfig(): array
 	{
-		return $this->dashboardData->nativeFilterConfig;
+		return $this->dashboardData?->nativeFilterConfig ?? [];
 	}
 
 	/**
@@ -149,6 +149,11 @@ final class Dashboard
 		}
 
 		return implode(',', $formatted);
+	}
+
+	public function isSupersetDashboardDataLoaded(): bool
+	{
+		return $this->dashboardData !== null;
 	}
 
 	private function getNativeFilterFields(): array

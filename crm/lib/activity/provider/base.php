@@ -792,7 +792,9 @@ class Base
 		foreach ($providers as $provider)
 		{
 			if (!$provider::isActive())
+			{
 				continue;
+			}
 
 			$providerPresets = $provider::getTypesFilterPresets();
 			foreach ($providerPresets as $preset)

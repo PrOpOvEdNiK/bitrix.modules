@@ -495,6 +495,38 @@ class ConfigurableRestApp extends Activity
 				{
 					$action->addActionParamString((string)$actionParamName, (string)$actionParamValue);
 				}
+				if ($actionDto->sliderParams)
+				{
+					if ($actionDto->sliderParams->title)
+					{
+						$action->addActionParamString('bx24_title', $actionDto->sliderParams->title);
+					}
+					if ($actionDto->sliderParams->width)
+					{
+						$action->addActionParamInt('bx24_width', $actionDto->sliderParams->width);
+					}
+					if ($actionDto->sliderParams->leftBoundary)
+					{
+						$action->addActionParamInt('bx24_leftBoundary', $actionDto->sliderParams->leftBoundary);
+					}
+					$labelParams = [];
+					if ($actionDto->sliderParams->labelText)
+					{
+						$labelParams['text'] = $actionDto->sliderParams->labelText;
+					}
+					if ($actionDto->sliderParams->labelColor)
+					{
+						$labelParams['color'] = $actionDto->sliderParams->labelColor;
+					}
+					if ($actionDto->sliderParams->labelBgColor)
+					{
+						$labelParams['bgColor'] = $actionDto->sliderParams->labelBgColor;
+					}
+					if (!empty($labelParams))
+					{
+						$action->addActionParamString('bx24_label', Json::encode($labelParams));
+					}
+				}
 
 				return $action;
 			}

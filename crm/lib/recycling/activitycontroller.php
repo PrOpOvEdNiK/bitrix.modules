@@ -570,7 +570,7 @@ class ActivityController extends BaseController
 
 		$connection = Main\Application::getConnection();
 		$connection->queryExecute(
-			"UPDATE b_crm_timeline_bind b SET b.IS_FIXED = 'N' WHERE b.OWNER_ID = {$ownerId}"
+			"UPDATE b_crm_timeline_bind SET IS_FIXED = 'N' WHERE OWNER_ID = {$ownerId}"
 		);
 	}
 

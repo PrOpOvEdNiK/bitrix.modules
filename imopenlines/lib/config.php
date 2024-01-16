@@ -1447,6 +1447,11 @@ class Config
 		return self::canDoOperation($configId, Security\Permissions::ENTITY_LINES, Security\Permissions::ACTION_VIEW, $userId);
 	}
 
+	public static function canViewHistory($configId, $userId = null)
+	{
+		return self::canDoOperation($configId, Security\Permissions::ENTITY_HISTORY, Security\Permissions::ACTION_VIEW, $userId);
+	}
+
 	public static function canEditLine($configId, $userId = null)
 	{
 		return self::canDoOperation($configId, Security\Permissions::ENTITY_LINES, Security\Permissions::ACTION_MODIFY, $userId);

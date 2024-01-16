@@ -159,6 +159,10 @@ class CAllCrmActivity
 		}
 
 		self::getInstance()->normalizeEntityFields($arFields);
+
+		$arFields['OWNER_ID'] = (int)$arFields['OWNER_ID'];
+		$arFields['OWNER_TYPE_ID'] = (int)$arFields['OWNER_TYPE_ID'];
+
 		$ID = $DB->Add(
 			CCrmActivity::TABLE_NAME,
 			$arFields,
@@ -5001,14 +5005,20 @@ class CAllCrmActivity
 				break;
 			}
 
-			$connection->queryExecute(/** @lang MySQL */
-				"UPDATE b_crm_act a1 INNER JOIN (SELECT ACTIVITY_ID, OWNER_ID, OWNER_TYPE_ID FROM b_crm_act_bind b1
+			$connection->queryExecute($connection->getSqlHelper()->prepareCorrelatedUpdate(
+				'b_crm_act',
+				'a1',
+				[
+					'OWNER_ID' => 'a2.OWNER_ID',
+					'OWNER_TYPE_ID' => 'a2.OWNER_TYPE_ID',
+				],
+				"(SELECT ACTIVITY_ID, OWNER_ID, OWNER_TYPE_ID FROM b_crm_act_bind b1
 					INNER JOIN (SELECT MIN(ID) ID FROM b_crm_act_bind
 						WHERE ACTIVITY_ID IN ({$conditionSql}) GROUP BY ACTIVITY_ID
 					) b2 ON b1.ID = b2.ID
-				) a2 ON a1.ID = a2.ACTIVITY_ID
-				SET a1.OWNER_ID = a2.OWNER_ID, a1.OWNER_TYPE_ID = a2.OWNER_TYPE_ID"
-			);
+				) a2",
+				'a1.ID = a2.ACTIVITY_ID'
+			));
 
 			foreach ($existedActivityIds as $existedActivityId)
 			{

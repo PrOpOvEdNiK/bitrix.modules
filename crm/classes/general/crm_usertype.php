@@ -1365,7 +1365,7 @@ class CCrmUserType
 	public function appendGridHeaders(array &$headers): void
 	{
 		(new \Bitrix\Crm\Component\EntityList\UserField\GridHeaders($this))
-			->setWithEnumFieldValues(true)
+			->setWithEnumFieldValues(false)
 			->setWithHtmlSpecialchars(false)
 			->append($headers)
 		;

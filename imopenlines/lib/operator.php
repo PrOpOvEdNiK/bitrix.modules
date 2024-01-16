@@ -663,9 +663,18 @@ class Operator
 				'URL_PREVIEW' => 'N',
 			]);
 		}
-		elseif ($error->code === 'DIALOG_NOT_FOUND')
+		elseif (!empty($error->code))
 		{
-			return $this->startSessionByMessage($messageId);
+			Log::write(['code' => $error->code, 'session' => $session], 'MULTIDIALOG CREATE ERROR');
+
+			\CIMMessenger::Add([
+				'DIALOG_ID' => 'chat' . $session['CHAT_ID'],
+				'TO_USER_ID' => $userId,
+				'MESSAGE' => Loc::getMessage('IMOL_OPERATOR_ERROR_CANT_OPEN_NEW_DIALOG'),
+				'SYSTEM' => 'Y',
+				'NO_SESSION_OL' => 'Y',
+				'URL_PREVIEW' => 'N',
+			]);
 		}
 
 		return $result->isSuccess();

@@ -3,6 +3,7 @@
 namespace Bitrix\Crm\Counter\ProblemDetector;
 
 use Bitrix\Crm\Activity\Entity\EntityUncompletedActivityTable;
+use Bitrix\Crm\Activity\LightCounter\ActCounterLightTimeTable;
 use Bitrix\Crm\ActivityBindingTable;
 use Bitrix\Crm\ActivityTable;
 use Bitrix\Crm\Counter\EntityCountableActivityTable;
@@ -79,8 +80,8 @@ class ProblemDetectorQueries
 				'ID',
 				'PROVIDER_ID',
 				'PROVIDER_TYPE_ID',
-				'CREATED',
-				'DEADLINE'
+				'DEADLINE',
+				'LAST_UPDATED'
 			])
 			->whereIn('ID', $activityIds)
 			->fetchAll();
@@ -152,6 +153,24 @@ class ProblemDetectorQueries
 			->fetchAll();
 	}
 
+	public function queryLightCounterCompletedIds(int $limit = 50): array
+	{
+		$query = ActCounterLightTimeTable::query()
+			->setSelect(['ACTIVITY_ID'])
+			->registerRuntimeField(
+				'',
+				new ReferenceField('A',
+					ActivityTable::getEntity(),
+					['=ref.ID' => 'this.ACTIVITY_ID'],
+					['join_type' => Join::TYPE_LEFT]
+				),
+			)
+			->where('A.COMPLETED', true)
+			->setLimit($limit);
+
+		return array_column($query->fetchAll(), 'ACTIVITY_ID');
+	}
+
 	public function getActivityFields(array $activitiesIds): array
 	{
 		$activityRecords = $this->queryActivities($activitiesIds);
@@ -161,10 +180,11 @@ class ProblemDetectorQueries
 
 		foreach ($activityRecords as &$activityRecord)
 		{
-			$activityRecord['BINDINGS'] = array_slice($bindings[$activityRecord['ID']] ?? [], 0, 15);
+			$actId = (string)$activityRecord['ID'];
+			$activityRecord['BINDINGS'] = array_slice($bindings[$actId] ?? [], 0, 15);
 		}
 
-		return  $activityRecords;
+		return $activityRecords;
 	}
 
 	private function groupBindingsByActivityId(array $bindings): array
@@ -172,15 +192,13 @@ class ProblemDetectorQueries
 		$result = [];
 		foreach ($bindings as $binding)
 		{
-			if (!isset($result['ACTIVITY_ID']))
+			$actId = (string)$binding['ACTIVITY_ID'];
+			if (!isset($result[$actId]))
 			{
-				$result['ACTIVITY_ID'] = [];
+				$result[$actId] = [];
 			}
 
-			$result['ACTIVITY_ID'][] = [
-				'OWNER_ID' => $binding['OWNER_ID'],
-				'OWNER_TYPE_ID' => $binding['OWNER_TYPE_ID'],
-			];
+			$result[$actId][] = [(int)$binding['OWNER_TYPE_ID'], (int)$binding['OWNER_ID']];
 		}
 
 		return $result;

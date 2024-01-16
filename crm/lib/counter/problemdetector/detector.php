@@ -5,9 +5,9 @@ namespace Bitrix\Crm\Counter\ProblemDetector;
 use Bitrix\Crm\Counter\ProblemDetector\Collector\Collector;
 use Bitrix\Crm\Counter\ProblemDetector\Collector\CountableCompletedCollector;
 use Bitrix\Crm\Counter\ProblemDetector\Collector\CountableDeletedCollector;
+use Bitrix\Crm\Counter\ProblemDetector\Collector\LightCounterCompletedCollector;
 use Bitrix\Crm\Counter\ProblemDetector\Collector\UncompletedCompletedCollector;
 use Bitrix\Crm\Counter\ProblemDetector\Collector\UncompletedDeletedCollector;
-use Bitrix\Crm\Counter\ProblemDetector\Recovery;
 use Bitrix\Main\Config\Option;
 
 /**
@@ -19,6 +19,7 @@ class Detector
 	public const PROBLEM_TYPE_COUNTABLE_DELETED = 'countable_deleted';
 	public const PROBLEM_TYPE_UNCOMPLETED_COMPLETED = 'uncompleted_completed';
 	public const PROBLEM_TYPE_UNCOMPLETED_DELETED = 'uncompleted_deleted';
+	public const PROBLEM_TYPE_LIGHTCOUNTER_COMPLETED = 'lightcounter_completed';
 
 	/** @var Collector[] */
 	private array $problemCollectors;
@@ -42,6 +43,7 @@ class Detector
 				new CountableDeletedCollector(),
 				new UncompletedCompletedCollector(),
 				new UncompletedDeletedCollector(),
+				new LightCounterCompletedCollector(),
 			];
 		}
 		else

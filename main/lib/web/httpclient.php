@@ -186,7 +186,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	/**
 	 * Performs GET request.
 	 *
-	 * @param string $url Absolute URI eg. "http://user:pass @ host:port/path/?query".
+	 * @param string $url Absolute URI e.g. "http://user:pass @ host:port/path/?query".
 	 * @return string|bool Response entity string or false on error. Note, it's empty string if outputStream is set.
 	 */
 	public function get($url)
@@ -201,7 +201,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	/**
 	 * Performs HEAD request.
 	 *
-	 * @param string $url Absolute URI eg. "http://user:pass @ host:port/path/?query"
+	 * @param string $url Absolute URI e.g. "http://user:pass @ host:port/path/?query"
 	 * @return HttpHeaders|bool Response headers or false on error.
 	 */
 	public function head($url)
@@ -216,7 +216,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	/**
 	 * Performs POST request.
 	 *
-	 * @param string $url Absolute URI eg. "http://user:pass @ host:port/path/?query".
+	 * @param string $url Absolute URI e.g. "http://user:pass @ host:port/path/?query".
 	 * @param array|string|resource $postData Entity of POST/PUT request. If it's resource handler then data will be read directly from the stream.
 	 * @param boolean $multipart Whether to use multipart/form-data encoding. If true, method accepts file as a resource or as an array with keys 'resource' (or 'content') and optionally 'filename' and 'contentType'
 	 * @return string|bool Response entity string or false on error. Note, it's empty string if outputStream is set.
@@ -271,7 +271,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 	 * Perfoms HTTP request.
 	 *
 	 * @param string $method HTTP method (GET, POST, etc.). Note, it must be in UPPERCASE.
-	 * @param string $url Absolute URI eg. "http://user:pass @ host:port/path/?query".
+	 * @param string $url Absolute URI e.g. "http://user:pass @ host:port/path/?query".
 	 * @param array|string|resource|Http\Stream $entityBody Entity body of the request. If it's resource handler then data will be read directly from the stream.
 	 * @return bool Query result (true or false). Response entity string can be got via getResult() method. Note, it's empty string if outputStream is set.
 	 */
@@ -872,6 +872,15 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 			}
 		}
 
+		// Here's the chance to tune up the client and to rebuild the request.
+		$event = new Http\RequestEvent($this, $request, 'OnHttpClientBuildRequest');
+		$event->send();
+
+		foreach ($event->getResults() as $eventResult)
+		{
+			$request = $eventResult->getRequest();
+		}
+
 		return $request;
 	}
 
@@ -902,7 +911,7 @@ class HttpClient implements Log\LoggerAwareInterface, ClientInterface, Http\Debu
 
 		if (!$this->privateIp)
 		{
-			$ip = IpAddress::createByUri($uri);
+			$ip = IpAddress::createByUri($punyUri);
 			if ($ip->isPrivate())
 			{
 				$this->addError('PRIVATE_IP', "Resolved IP is incorrect or private: {$ip->get()}");

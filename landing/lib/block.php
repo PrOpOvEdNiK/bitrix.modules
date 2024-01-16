@@ -95,6 +95,16 @@ class Block extends \Bitrix\Landing\Internals\BaseTable
 	public const DEFAULT_WRAPPER_STYLE = ['block-default'];
 
 	/**
+	 * Maximum allowed number of favorite blocks
+	 */
+	public const FAVOURITE_BLOCKS_LIMIT = 5000;
+
+	/**
+	 * Maximum allowed number of favorite blocks with preview image
+	 */
+	public const FAVOURITE_BLOCKS_LIMIT_WITH_PREVIEW = 1000;
+
+	/**
 	 * Internal class.
 	 * @var string
 	 */
@@ -1254,10 +1264,13 @@ class Block extends \Bitrix\Landing\Internals\BaseTable
 			],
 			'order' => [
 				'ID' => 'desc'
-			]
+			],
+			'limit' => self::FAVOURITE_BLOCKS_LIMIT,
 		]);
+		$countFavoriteBlocks = 0;
 		while ($row = $res->fetch())
 		{
+			$countFavoriteBlocks++;
 			if (isset($blocks[$row['CODE']]))
 			{
 				if (!is_array($row['FAVORITE_META']))
@@ -1268,7 +1281,7 @@ class Block extends \Bitrix\Landing\Internals\BaseTable
 				$meta['preview'] = $meta['preview'] ?? 0;
 				$meta['favorite'] = true;
 				$meta['favoriteMy'] = ((int)$row['CREATED_BY_ID'] === $currentUser);
-				if ($meta['preview'] > 0)
+				if ($meta['preview'] > 0 && $countFavoriteBlocks < self::FAVOURITE_BLOCKS_LIMIT_WITH_PREVIEW)
 				{
 					$meta['preview'] = File::getFilePath($meta['preview']);
 				}

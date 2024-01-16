@@ -2701,7 +2701,7 @@ class CAllCrmDeal
 				elseif($contactID > 0)
 				{
 					$connection->queryExecute(
-						"UPDATE b_crm_deal SET IS_RETURN_CUSTOMER = 'Y', IS_REPEATED_APPROACH = 'N' WHERE IS_RETURN_CUSTOMER = 'N' AND CONTACT_ID = {$contactID} AND IFNULL(COMPANY_ID, 0) = 0"
+						"UPDATE b_crm_deal SET IS_RETURN_CUSTOMER = 'Y', IS_REPEATED_APPROACH = 'N' WHERE IS_RETURN_CUSTOMER = 'N' AND CONTACT_ID = {$contactID} AND coalesce(COMPANY_ID, 0) = 0"
 					);
 				}
 				$connection->queryExecute("UPDATE b_crm_deal SET IS_RETURN_CUSTOMER = 'N' WHERE ID = {$primaryID}");

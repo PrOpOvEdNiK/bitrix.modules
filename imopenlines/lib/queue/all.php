@@ -98,7 +98,10 @@ class All extends Queue
 
 				$reasonReturn = SessionCheckTable::getById($this->session['ID'])->fetch()['REASON_RETURN'];
 
-				if ($this->session['STATUS'] > Session::STATUS_SKIP)
+				if (
+					$this->session['STATUS'] > Session::STATUS_SKIP
+					|| in_array($reasonReturn, [ImOpenLines\Queue::REASON_OPERATOR_DAY_END, ImOpenLines\Queue::REASON_OPERATOR_DAY_END_SILENT], true)
+				)
 				{
 					$this->prepareToQueue();
 				}

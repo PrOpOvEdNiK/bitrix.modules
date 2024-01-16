@@ -27,17 +27,7 @@ class Automation extends Tool
 
 	private function getBizprocUrl(): string
 	{
-		//for beta-test only
-		$userId = \Bitrix\Main\Engine\CurrentUser::get()->getId();
-		$testers = isModuleInstalled('bizprocmobile') ? \COption::GetOptionString('bizproc', 'beta_testers') : '-';
-		$showNewProcesses = empty($testers) || in_array($userId, explode(',', $testers));
-
-		if ($showNewProcesses)
-		{
-			return '/bizproc/userprocesses/';
-		}
-
-		return '/company/personal/bizproc/';
+		return '/bizproc/userprocesses/';
 	}
 
 	public function getSubgroupSettingsPath(): array

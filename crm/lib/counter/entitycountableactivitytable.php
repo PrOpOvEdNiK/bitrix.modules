@@ -100,6 +100,8 @@ class EntityCountableActivityTable extends DataManager
 
 	public static function deleteByIds(array $ids): void
 	{
+		$ids = array_filter($ids, 'is_numeric');
+
 		if (empty($ids))
 		{
 			return;

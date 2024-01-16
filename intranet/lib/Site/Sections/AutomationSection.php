@@ -97,37 +97,16 @@ class AutomationSection
 		$tasksCount = (int)\CUserCounter::getValue($userId, 'bp_tasks');
 		$menu = [];
 
-		//for beta-test only
-		$testers = isModuleInstalled('bizprocmobile') ? \COption::GetOptionString('bizproc', 'beta_testers') : '-';
-		$showNewProcesses = empty($testers) || in_array($userId, explode(',', $testers));
-
-		if ($showNewProcesses)
-		{
-			$menu[] = [
-				Loc::getMessage('MENU_USER_PROCESSES'),
-				SITE_DIR . 'bizproc/userprocesses/',
-				[],
-				[
-					'counter_id' => 'bp_tasks',
-					'counter_num' => $tasksCount,
-					'menu_item_id' => 'menu_processes_and_tasks',
-				],
-			];
-		}
-		else
-		{
-			$menu[] = [
-				Loc::getMessage('MENU_BIZPROC_TASKS_1'),
-				SITE_DIR . 'company/personal/bizproc/',
-				[],
-				[
-					'counter_id' => 'bp_tasks',
-					'counter_num' => $tasksCount,
-					'menu_item_id' => 'menu_bizproc'
-				],
-				'',
-			];
-		}
+		$menu[] = [
+			Loc::getMessage('MENU_USER_PROCESSES'),
+			SITE_DIR . 'bizproc/userprocesses/',
+			[],
+			[
+				'counter_id' => 'bp_tasks',
+				'counter_num' => $tasksCount,
+				'menu_item_id' => 'menu_processes_and_tasks',
+			],
+		];
 
 		if (Loader::includeModule('lists') && \CLists::isFeatureEnabled())
 		{
@@ -138,17 +117,6 @@ class AutomationSection
 				['menu_item_id' => 'menu_processes'],
 				'',
 			];
-
-			if (!$showNewProcesses)
-			{
-				$menu[] = [
-					Loc::getMessage('MENU_MY_PROCESS_1'),
-					SITE_DIR . 'company/personal/processes/',
-					[],
-					['menu_item_id' => 'menu_my_processes'],
-					'',
-				];
-			}
 		}
 
 		$menu[] = [

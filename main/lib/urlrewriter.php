@@ -399,7 +399,7 @@ class UrlRewriter
 				}
 
 				if ($maxExecutionTime > 0
-					&& (getmicrotime() - START_EXEC_TIME > $maxExecutionTime))
+					&& (microtime(true) - START_EXEC_TIME > $maxExecutionTime))
 				{
 					$ns["FLG"] = "Y";
 					$ns["ID"] = $child->getPath();

@@ -159,7 +159,7 @@ class ScheduleSettings extends AbstractSettings
 			$data['year_holidays'] = (string)$calendarSet['year_holidays'];
 
 			$data['TIMEMAN'] = [
-				'enabled' => IsModuleInstalled('timeman'),
+				'enabled' => IsModuleInstalled('timeman') || IsModuleInstalled('bitrix24'),
 				'restricted' => $this->isTimemanRestricted()
 			];
 		}

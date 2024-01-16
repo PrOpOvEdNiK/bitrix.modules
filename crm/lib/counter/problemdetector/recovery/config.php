@@ -11,8 +11,23 @@ class Config
 
 	private const DEFAULT_FIX_LIMIT = 10;
 
+	private int $limit;
+
+
+	public function __construct(?int $limit = null)
+	{
+		if ($limit === null)
+		{
+			$this->limit = (int)Option::get('crm', 'CounterProblemDetectorRecoveryLimit', self::DEFAULT_FIX_LIMIT);
+		}
+		else
+		{
+			$this->limit = $limit;
+		}
+	}
+
 	public function getLimit(): int
 	{
-		return (int)Option::get('crm', 'CounterProblemDetectorRecoveryLimit', self::DEFAULT_FIX_LIMIT);
+		return $this->limit;
 	}
 }

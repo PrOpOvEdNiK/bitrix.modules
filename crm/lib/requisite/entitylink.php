@@ -582,37 +582,23 @@ class EntityLink
 
 		$connection = Main\Application::getConnection();
 
-		if($connection instanceof Main\DB\MysqlCommonConnection
-			|| $connection instanceof Main\DB\MssqlConnection
-			|| $connection instanceof Main\DB\OracleConnection)
-		{
-			$tableName = LinkTable::getTableName();
-			if ($connection instanceof Main\DB\MssqlConnection
-				|| $connection instanceof Main\DB\OracleConnection)
-			{
-				$tableName = mb_strtoupper($tableName);
-			}
-			$connection->queryExecute(
-				"DELETE FROM {$tableName} WHERE (REQUISITE_ID = {$requisiteId} AND MC_REQUISITE_ID = 0) OR ".
-				"(MC_REQUISITE_ID = {$requisiteId} AND REQUISITE_ID = 0) OR ".
-				"(MC_REQUISITE_ID = {$requisiteId} AND REQUISITE_ID = {$requisiteId})"
-			);
-			$connection->queryExecute(
-				"UPDATE {$tableName} ".
-				"SET REQUISITE_ID = 0, BANK_DETAIL_ID = 0 ".
-				"WHERE REQUISITE_ID = {$requisiteId} AND MC_REQUISITE_ID > 0"
-			);
-			$connection->queryExecute(
-				"UPDATE {$tableName} ".
-				"SET MC_REQUISITE_ID = 0, MC_BANK_DETAIL_ID = 0 ".
-				"WHERE MC_REQUISITE_ID = {$requisiteId} AND REQUISITE_ID > 0"
-			);
-		}
-		else
-		{
-			$dbType = $connection->getType();
-			throw new Main\NotSupportedException("The '{$dbType}' is not supported in current context");
-		}
+		$tableName = LinkTable::getTableName();
+
+		$connection->queryExecute(
+			"DELETE FROM {$tableName} WHERE (REQUISITE_ID = {$requisiteId} AND MC_REQUISITE_ID = 0) OR ".
+			"(MC_REQUISITE_ID = {$requisiteId} AND REQUISITE_ID = 0) OR ".
+			"(MC_REQUISITE_ID = {$requisiteId} AND REQUISITE_ID = {$requisiteId})"
+		);
+		$connection->queryExecute(
+			"UPDATE {$tableName} ".
+			"SET REQUISITE_ID = 0, BANK_DETAIL_ID = 0 ".
+			"WHERE REQUISITE_ID = {$requisiteId} AND MC_REQUISITE_ID > 0"
+		);
+		$connection->queryExecute(
+			"UPDATE {$tableName} ".
+			"SET MC_REQUISITE_ID = 0, MC_BANK_DETAIL_ID = 0 ".
+			"WHERE MC_REQUISITE_ID = {$requisiteId} AND REQUISITE_ID > 0"
+		);
 	}
 
 	public static function getSelectedRequisiteLink($entityTypeId, $entityId): array

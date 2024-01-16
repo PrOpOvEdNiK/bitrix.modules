@@ -14,6 +14,7 @@ use Bitrix\Im\Model\MessageTable;
 use Bitrix\Im\V2\Message\ReadService;
 use Bitrix\Im\V2\Message\Params;
 
+use Bitrix\ImOpenLines;
 use Bitrix\ImOpenLines\Log\Library;
 use Bitrix\Imopenlines\Im\Messages;
 use Bitrix\ImOpenLines\Log\EventLog;
@@ -39,6 +40,12 @@ class Session
 
 	/* @var Chat */
 	public $chat = null;
+
+	/* @var Crm */
+	private $crmManager = null;
+
+	/** @var ImOpenLines\Queue\Queue | ImOpenLines\Queue\Evenly | ImOpenLines\Queue\All | ImOpenLines\Queue\Strictly */
+	private $queueManager = null;
 
 	private $action = 'none';
 	private $joinUserList = [];
@@ -107,6 +114,40 @@ class Session
 	public function setConfig(array $config)
 	{
 		$this->config = $config;
+	}
+
+	public function setCrmManager(Crm $crmManager): self
+	{
+		$this->crmManager = $crmManager;
+		return $this;
+	}
+
+	public function getCrmManager(): Crm
+	{
+		if (!$this->crmManager instanceof Crm)
+		{
+			$this->crmManager = new Crm($this);
+		}
+		return $this->crmManager;
+	}
+
+	/**
+	 * @param ImOpenLines\Queue\Queue | ImOpenLines\Queue\Evenly | ImOpenLines\Queue\All | ImOpenLines\Queue\Strictly $queueManager
+	 * @return $this
+	 */
+	public function setQueueManager(ImOpenLines\Queue\Queue $queueManager): self
+	{
+		$this->queueManager = $queueManager;
+		return $this;
+	}
+
+	public function getQueueManager(): ImOpenLines\Queue\Queue
+	{
+		if (!$this->queueManager instanceof ImOpenLines\Queue\Queue)
+		{
+			$this->queueManager = Queue::initialization($this);
+		}
+		return $this->queueManager;
 	}
 
 	/**
@@ -207,7 +248,7 @@ class Session
 		$params['DEFERRED_JOIN'] = (isset($params['DEFERRED_JOIN']) && $params['DEFERRED_JOIN'] === 'Y' ? 'Y' : 'N');
 		$params['SKIP_CREATE'] = (isset($params['SKIP_CREATE']) && $params['SKIP_CREATE'] === 'Y' ? 'Y' : 'N');
 		$params['REOPEN'] = (isset($params['REOPEN']) && $params['REOPEN'] === 'Y' ? 'Y' : 'N');
-		$params['SKIP_CRM'] = (isset($params['SKIP_CRM']) && $params['SKIP_CRM'] === 'Y' ? 'Y' : 'N');
+		$params['CRM_TRACKER_REF'] = (string)($params['CRM_TRACKER_REF'] ?? '');
 
 		//Check open line configuration load
 		if (empty($this->config) && !empty($fields['CONFIG_ID']))
@@ -287,32 +328,25 @@ class Session
 		$result = new Result();
 
 		/* CRM BLOCK */
-		$crmManager = new Crm($this);
+		$crmManager = $this->getCrmManager();
 
-		if ($params['SKIP_CRM'] == 'Y')
+		if ($crmManager->isLoaded())
 		{
-			$crmManager->setSkipCreate();
-		}
-		else
-		{
-			if ($crmManager->isLoaded())
+			$crmManager
+				->getFields()
+				->setSkipPhoneValidate($params['CRM_SKIP_PHONE_VALIDATE'] === 'Y')
+				->setDataFromUser($fields['USER_ID'])
+			;
+			$crmManager->setModeCreate($this->config['CRM_CREATE']);
+
+			if (Connector::isNeedCRMTracker($fields['SOURCE']))
 			{
 				$crmManager
-					->getFields()
-					->setSkipPhoneValidate($params['CRM_SKIP_PHONE_VALIDATE'] === 'Y')
-					->setDataFromUser($fields['USER_ID'])
-				;
-				$crmManager->setModeCreate($this->config['CRM_CREATE']);
-
-				if (Connector::isNeedCRMTracker($fields['SOURCE']))
-				{
-					$crmManager
-						->setSkipCreate()
-						->setIgnoreSearchPerson();
-				}
-
-				$fields['CRM_TRACE_DATA'] = Crm\Tracker::getTraceData($fields['USER_ID'], $params['CRM_TRACE_DATA']);
+					->setSkipCreate()
+					->setIgnoreSearchPerson();
 			}
+
+			$fields['CRM_TRACE_DATA'] = Crm\Tracker::getTraceData($fields['USER_ID'], $params['CRM_TRACE_DATA']);
 		}
 
 		if ($fields['MODE'] === self::MODE_OUTPUT)
@@ -359,15 +393,29 @@ class Session
 				$this->session = $fields;
 				$this->session['ID'] = $this->session['SESSION_ID'] = $fields['SESSION_ID'];
 
-				$dateNoAnswer = null;
+				$queueManager = $this->getQueueManager();
+				$queueManager
+					->enableGroupChat(Connector::isEnableGroupByChat($fields['SOURCE']))
+					->setCrmManager($crmManager)
+				;
 
-				$queueManager = Queue::initialization($this);
+				if ($fields['MODE'] == self::MODE_INPUT)
+				{
+					if (
+						!empty($params['CRM_TRACKER_REF'])
+						&& $this->config['CRM'] == 'Y'
+						&& $crmManager->isLoaded()
+					)
+					{
+						$tracker = new ImOpenLines\Tracker();
+						$tracker
+							->setSession($this)
+							->bindExpectationToChat($params['CRM_TRACKER_REF'], $this->chat)
+						;
+					}
+				}
 
-				$resultQueue = $queueManager->createSession(
-					$fields['OPERATOR_ID'],
-					$crmManager,
-					Connector::isEnableGroupByChat($fields['SOURCE'])
-				);
+				$resultQueue = $queueManager->createSession($fields['OPERATOR_ID']);
 
 				$this->session['JOIN_BOT'] = $resultQueue['JOIN_BOT'];
 				$this->session['OPERATOR_ID'] = $fields['OPERATOR_ID'] = $params['OPERATOR_ID'] = $resultQueue['OPERATOR_ID'];
@@ -390,14 +438,17 @@ class Session
 				}
 				else
 				{
-					if (
-						isset($params['CONNECTOR']['message']['extraData']['SOURCE_SESSION_ID'])
-						&& isset($params['CONNECTOR']['message']['extraData']['SOURCE_CHAT_ID'])
-					)
+					if (isset($params['CONNECTOR']['message']['extraData']['SOURCE_SESSION_ID']))
 					{
+						$parentSession = SessionTable::getRow([
+							'select' => ['CHAT_ID'],
+							'filter' => ['ID' => $params['CONNECTOR']['message']['extraData']['SOURCE_SESSION_ID']],
+						]);
+
 						$messageId = Messages\Session::sendMessageNewMultidialog(
+							$fields['SESSION_ID'],
 							$fields['CHAT_ID'],
-							$params['CONNECTOR']['message']['extraData']['SOURCE_CHAT_ID'],
+							$parentSession['CHAT_ID'],
 							$params['CONNECTOR']['message']['extraData']['SOURCE_SESSION_ID']
 						);
 					}
@@ -533,9 +584,9 @@ class Session
 				ConfigStatistic::getInstance((int)$fields['CONFIG_ID'])->addInWork()->addSession();
 
 				/* CRM BLOCK */
-				if ($params['SKIP_CRM'] != 'Y')
+				if ($fields['MODE'] == self::MODE_INPUT)
 				{
-					if ($fields['MODE'] == self::MODE_INPUT)
+					if (empty($params['CRM_TRACKER_REF']))
 					{
 						if (
 							!Connector::isEnableGroupByChat($fields['SOURCE'])
@@ -554,23 +605,23 @@ class Session
 							$crmManager->setDefaultFlags();
 						}
 					}
-					elseif ($fields['MODE'] == self::MODE_OUTPUT)
+				}
+				elseif ($fields['MODE'] == self::MODE_OUTPUT)
+				{
+					if ($this->config['CRM'] == 'Y' && $crmManager->isLoaded())
 					{
-						if ($this->config['CRM'] == 'Y' && $crmManager->isLoaded())
+						$crmManager->getFields()->setTitle($this->chat->getData('TITLE'));
+
+						if (
+							$params['REOPEN'] === 'Y'
+							|| $fields['IS_FIRST'] === 'N'
+						)
 						{
-							$crmManager->getFields()->setTitle($this->chat->getData('TITLE'));
-
-							if (
-								$params['REOPEN'] === 'Y'
-								|| $fields['IS_FIRST'] === 'N'
-							)
-							{
-								$crmManager->setSkipAutomationTriggerFirstMessage();
-							}
-
-							$crmManager->registrationChanges();
-							$crmManager->sendCrmImMessages();
+							$crmManager->setSkipAutomationTriggerFirstMessage();
 						}
+
+						$crmManager->registrationChanges();
+						$crmManager->sendCrmImMessages();
 					}
 				}
 
@@ -992,7 +1043,7 @@ class Session
 			$closeDate->add((int)$this->getConfig('AUTO_CLOSE_TIME').' SECONDS');
 			$closeDate->add('1 DAY');
 
-			$crmManager = new Crm($this);
+			$crmManager = $this->getCrmManager();
 			if ($crmManager->isLoaded())
 			{
 				$crmManager->setSessionAnswered(['DATE_CLOSE' => $closeDate]);
@@ -1383,7 +1434,7 @@ class Session
 			{
 				if ($this->session['CRM_ACTIVITY_ID'] > 0)
 				{
-					$crmManager = new Crm($this);
+					$crmManager = $this->getCrmManager();
 					if ($crmManager->isLoaded())
 					{
 						$crmManager->setSessionClosed(['DATE_CLOSE' => $currentDate]);
@@ -1534,7 +1585,7 @@ class Session
 
 		if ($this->session['CRM_ACTIVITY_ID'] > 0)
 		{
-			$crmManager = new Crm($this);
+			$crmManager = $this->getCrmManager();
 			if ($crmManager->isLoaded())
 			{
 				$crmManager->setSessionClosed(['DATE_CLOSE' => $closeDate]);
@@ -1715,7 +1766,7 @@ class Session
 
 		Debug::addSession($this,  __METHOD__, ['manual' => $manual]);
 
-		$queueManager = Queue::initialization($this);
+		$queueManager = $this->getQueueManager();
 
 		if ($queueManager)
 		{

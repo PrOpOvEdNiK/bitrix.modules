@@ -108,6 +108,9 @@ final class FieldRepository
 		return
 			(new DatetimeField($fieldName))
 				->configureTitle(Loc::getMessage($messageCode))
+				->configureDefaultValue(static function () {
+					return new DateTime();
+				})
 		;
 	}
 
@@ -248,7 +251,7 @@ final class FieldRepository
 				return $defaultMyCompanyId;
 			}
 
-			return null;
+			return 0;
 		};
 
 		return

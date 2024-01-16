@@ -7,6 +7,7 @@ use Bitrix\Crm\Comparer\ComparerBase;
 use Bitrix\Crm\Dto\Dto;
 use Bitrix\Crm\Entity\FieldDataProvider;
 use Bitrix\Crm\Integration\AI\AIManager;
+use Bitrix\Crm\Integration\AI\Analytics;
 use Bitrix\Crm\Integration\AI\Dto\FillItemFieldsFromCallTranscriptionPayload;
 use Bitrix\Crm\Integration\AI\Dto\MultipleFieldFillPayload;
 use Bitrix\Crm\Integration\AI\Dto\SingleFieldFillPayload;
@@ -333,6 +334,9 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 			$result->getUserId(),
 		);
 
+		$atListOneFieldIsApplied = false;
+		$commentFieldIsApplied = false;
+
 		foreach ($payload->singleFields as $singleField)
 		{
 			if (
@@ -343,6 +347,7 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 			{
 				$item->set($singleField->name, $singleField->aiValue);
 				$singleField->isApplied = true;
+				$atListOneFieldIsApplied = true;
 			}
 		}
 
@@ -359,6 +364,7 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 				{
 					$item->set($multipleField->name, array_merge($previousValue, $multipleField->aiValues));
 					$multipleField->isApplied = true;
+					$atListOneFieldIsApplied = true;
 				}
 			}
 		}
@@ -366,6 +372,7 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 		if (!empty($payload->unallocatedData) && $item->hasField(Item::FIELD_NAME_COMMENTS))
 		{
 			$item->setComments(self::appendComment((string)$item->getComments(), $payload->unallocatedData));
+			$commentFieldIsApplied = true;
 		}
 
 		$context =
@@ -397,6 +404,16 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 				$result->setOperationStatus(Result::OPERATION_STATUS_APPLIED);
 			}
 
+			$activityId = self::getParentActivityId($result);
+			if ($atListOneFieldIsApplied)
+			{
+				self::sendAnalyticsWrapper($activityId, Analytics::STATUS_SUCCESS_FIELDS);
+			}
+			elseif ($commentFieldIsApplied)
+			{
+				self::sendAnalyticsWrapper($activityId, Analytics::STATUS_SUCCESS_COMMENT);
+			}
+
 			$saveResult = JobRepository::getInstance()->updateFillItemFieldsFromCallTranscriptionResult($result);
 
 			if ($saveResult->isSuccess())
@@ -412,13 +429,14 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 			else
 			{
 				AIManager::logger()->critical(
-					'{date}: {class}: Got error while trying to update operation status after item fields update.'
+					'{date}: {class}: Got error while trying to update operation status after item fields update for activity{activity}.'
 					. ' Target {target}, errors {errors}, result {result}' . PHP_EOL,
 					[
 						'class' => self::class,
 						'target' => $result->getTarget(),
 						'errors' => $saveResult->getErrors(),
 						'result' => $result,
+						'activity' => self::getTargetRealId($result->getTarget(), $result->getParentJobId()),
 					],
 				);
 			}
@@ -511,7 +529,11 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 		}
 	}
 
-	protected static function notifyAboutJobError(Result $result, bool $withSyncBadges = true): void
+	protected static function notifyAboutJobError(
+		Result $result,
+		bool $withSyncBadges = true,
+		bool $withSendAnalytics = true
+	): void
 	{
 		$activityId = self::getParentActivityId($result);
 		if ($activityId > 0)
@@ -532,6 +554,11 @@ class FillItemFieldsFromCallTranscription extends AbstractOperation
 			}
 			
 			self::notifyTimelinesAboutActivityUpdate($activityId);
+
+			if ($withSendAnalytics)
+			{
+				self::sendAnalyticsWrapper($activityId, Analytics::STATUS_ERROR_GPT);
+			}
 		}
 	}
 

@@ -156,10 +156,10 @@ final class QueueTable extends DataManager
 			/** @lang text */
 			'UPDATE ?# SET ENTITY_TYPE_ID=?i, ENTITY_ID=?i WHERE ENTITY_TYPE_ID=?i AND ENTITY_ID=?i',
 			self::getTableName(),
-			$src->getEntityTypeId(),
-			$src->getEntityId(),
 			$dst->getEntityTypeId(),
 			$dst->getEntityId(),
+			$src->getEntityTypeId(),
+			$src->getEntityId(),
 		);
 
 		Application::getConnection()->query((string)$sqlQuery);

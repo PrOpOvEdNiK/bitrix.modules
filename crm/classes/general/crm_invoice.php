@@ -2358,7 +2358,7 @@ class CAllCrmInvoice
 		{
 			$arProperty = CSaleOrderPropsAdapter::convertNewToOld($arProperty);
 
-			if (array_key_exists($arProperty["CODE"], $allowedProperties[$arProperty["PERSON_TYPE_ID"]]))
+			if (isset($allowedProperties[$arProperty["PERSON_TYPE_ID"]]) && array_key_exists($arProperty["CODE"], $allowedProperties[$arProperty["PERSON_TYPE_ID"]]))
 			{
 				$arProperty["NAME"] = $allowedProperties[$arProperty["PERSON_TYPE_ID"]][$arProperty["CODE"]];
 				if ($onlyEditable)
@@ -3536,21 +3536,23 @@ class CAllCrmInvoice
 					unset($tmpCatalogId, $dbRes);
 					if ($catalogId > 0)
 					{
-						$strSql =
-							"UPDATE b_crm_invoice_basket B".PHP_EOL.
-							"  INNER JOIN b_crm_invoice O ON B.ORDER_ID = O.ID".PHP_EOL.
-							"  INNER JOIN b_iblock_element IE ON B.PRODUCT_ID = IE.ID".PHP_EOL.
-							"  INNER JOIN b_iblock I ON IE.IBLOCK_ID = I.ID".PHP_EOL.
-							"SET".PHP_EOL.
-							"  B.CATALOG_XML_ID = I.XML_ID,".PHP_EOL.
-							"  B.PRODUCT_XML_ID = IE.XML_ID".PHP_EOL.
-							"WHERE".PHP_EOL.
-							"  IE.IBLOCK_ID = $catalogId".PHP_EOL.
-							"  AND (".PHP_EOL.
-							"    B.PRODUCT_XML_ID IS NULL OR B.PRODUCT_XML_ID = ''".PHP_EOL.
-							"    OR B.CATALOG_XML_ID IS NULL OR B.CATALOG_XML_ID = ''".PHP_EOL.
-							"  )".PHP_EOL.
-							"  AND O.RESPONSIBLE_ID IS NOT NULL";
+						$strSql = $DB->PrepareUpdateJoin('b_crm_invoice_basket', [
+							'CATALOG_XML_ID' => 'I.XML_ID',
+							'PRODUCT_XML_ID' => 'IE.XML_ID',
+						], [
+							['b_crm_invoice O', 'b_crm_invoice_basket.ORDER_ID = O.ID'],
+							['b_iblock_element IE', 'b_crm_invoice_basket.PRODUCT_ID = IE.ID'],
+							['b_iblock I', 'IE.IBLOCK_ID = I.ID'],
+						],
+						"
+						IE.IBLOCK_ID = $catalogId
+						AND (
+							b_crm_invoice_basket.PRODUCT_XML_ID IS NULL OR b_crm_invoice_basket.PRODUCT_XML_ID = ''
+							OR b_crm_invoice_basket.CATALOG_XML_ID IS NULL OR b_crm_invoice_basket.CATALOG_XML_ID = ''
+						)
+						AND O.RESPONSIBLE_ID IS NOT NULL
+						"
+						);
 						$DB->Query($strSql, false, "File: ".__FILE__."<br>Line: ".__LINE__);
 						unset($strSql);
 					}

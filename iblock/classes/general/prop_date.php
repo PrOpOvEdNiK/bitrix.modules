@@ -156,7 +156,7 @@ class CIBlockPropertyDate extends CIBlockPropertyDateTime
 	public static function GetUIFilterProperty($property, $control, &$fields)
 	{
 		parent::GetUIFilterProperty($property, $control, $fields);
-		unset($fields["time"]);
+		unset($fields['time'], $fields['data']);
 	}
 
 	/**

@@ -172,7 +172,7 @@ class CAllCrmMailTemplate
 		$ID = (int)$ID;
 
 		self::prepareAttachmentsForOldTemplate($ID);
-		
+
 		if (!self::CheckFields('UPDATE', $arFields, $ID))
 		{
 			return false;
@@ -648,9 +648,9 @@ class CCrmMailTemplateScope
 			IncludeModuleLangFile(__FILE__);
 			self::$ALL_DESCRIPTIONS[LANGUAGE_ID] = array(
 				//self::Undefined => '',
-				self::Personal => GetMessage('CRM_MAIL_TEMPLATE_SCOPE_PERSONAL'),
-				self::Common => GetMessage('CRM_MAIL_TEMPLATE_SCOPE_COMMON'),
-				self::Limited => GetMessage('CRM_MAIL_TEMPLATE_SCOPE_LIMITED'),
+				self::Personal => GetMessage('CRM_MAIL_TEMPLATE_SCOPE_PERSONAL_MSGVER_1'),
+				self::Common => GetMessage('CRM_MAIL_TEMPLATE_SCOPE_COMMON_MSGVER_1'),
+				self::Limited => GetMessage('CRM_MAIL_TEMPLATE_SCOPE_LIMITED_MSGVER_1'),
 			);
 		}
 

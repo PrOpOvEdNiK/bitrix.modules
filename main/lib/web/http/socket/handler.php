@@ -151,16 +151,8 @@ class Handler extends Http\Handler
 						// all headers received
 						$this->log("\n<<<RESPONSE\n" . $this->responseHeaders . "\n", Web\HttpDebug::RESPONSE_HEADERS);
 
-						try
-						{
-							// build the response for the next stage
-							$this->response = $this->responseBuilder->createFromString($this->responseHeaders);
-						}
-						catch (\InvalidArgumentException $e)
-						{
-//							throw new Http\NetworkException($request, 'Incorrect response header: ' . $e->getMessage());
-							throw new \InvalidArgumentException($e->getMessage() . ' ' . $request->getUri());
-						}
+						// build the response for the next stage
+						$this->response = $this->responseBuilder->createFromString($this->responseHeaders);
 
 						$fetchBody = $this->waitResponse;
 
@@ -365,7 +357,7 @@ class Handler extends Http\Handler
 			{
 				$buf = $this->socket->read(self::BUF_READ_LEN);
 			}
-			catch (\RuntimeException $e)
+			catch (\RuntimeException)
 			{
 				throw new Http\NetworkException($request, 'Stream reading error.');
 			}
@@ -380,7 +372,7 @@ class Handler extends Http\Handler
 			{
 				$body->write($buf);
 			}
-			catch (\RuntimeException $e)
+			catch (\RuntimeException)
 			{
 				throw new Http\NetworkException($request, 'Error writing to response body stream.');
 			}

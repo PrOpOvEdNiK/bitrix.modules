@@ -83,13 +83,14 @@ class Session
 	 * @param $sessionIdParent
 	 * @return bool|int
 	 */
-	public static function sendMessageNewMultidialog($chatId, $parentChatId, $parentSessionId)
+	public static function sendMessageNewMultidialog($sessionId, $chatId, $parentChatId, $parentSessionId)
 	{
 		$messageFields = [
 			'SYSTEM' => 'Y',
 			'TO_CHAT_ID' => $chatId,
-			'MESSAGE' => Loc::getMessage('IMOL_MESSAGE_SESSION_START_BY_MESSAGE_MULTI', [
-				'#LINK#' => ImOpenLines\Chat::getUrlImChat($parentChatId, $parentSessionId)
+			'MESSAGE' => Loc::getMessage('IMOL_MESSAGE_SESSION_START_BY_MESSAGE_MULTI_MSGVER_1', [
+				'#LINK1#' => ImOpenLines\Session\Common::getUrlImHistoryBbCode($sessionId, $sessionId),
+				'#LINK2#' => ImOpenLines\Chat::getUrlImChat($parentChatId, $parentSessionId),
 			]),
 			'PARAMS' => [
 				'CLASS' => 'bx-messenger-content-item-ol-start'

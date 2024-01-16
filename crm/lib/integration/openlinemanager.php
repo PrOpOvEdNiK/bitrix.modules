@@ -60,7 +60,7 @@ class OpenLineManager
 		'telegram',
 		'imessage',
 	];
-	
+
 	public static function isEnabled()
 	{
 		if (self::$isEnabled === null)
@@ -87,11 +87,11 @@ class OpenLineManager
 
 		$typeID = $items[1];
 		$suffix = mb_strtoupper(preg_replace('/[^a-z0-9]/i', '', $typeID));
-		$text = Loc::getMessage("CRM_OPEN_LINE_{$suffix}");
-		if ($text === null)
-		{
-			$text = Loc::getMessage('CRM_OPEN_LINE_SEND_MESSAGE');
-		}
+		$text =
+			Loc::getMessage("CRM_OPEN_LINE_{$suffix}")
+			?? Loc::getMessage("CRM_OPEN_LINE_{$suffix}_MSGVER_1")
+			?? Loc::getMessage('CRM_OPEN_LINE_SEND_MESSAGE')
+		;
 
 		return [
 			'HREF' => '#',

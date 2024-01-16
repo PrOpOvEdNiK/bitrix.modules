@@ -24,6 +24,11 @@ final class Document extends Configurable
 		return 'Document';
 	}
 
+	protected function isBuiltOnlyForCurrentUser(): bool
+	{
+		return true;
+	}
+
 	public function getTitle(): ?string
 	{
 		return Loc::getMessage('CRM_TIMELINE_DOCUMENT_TITLE');

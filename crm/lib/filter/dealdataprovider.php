@@ -61,13 +61,14 @@ class DealDataProvider extends EntityDataProvider implements FactoryOptionable
 	 * @param string $fieldID Field ID.
 	 * @return string
 	 */
-	protected function getFieldName($fieldID)
+	protected function getFieldName($fieldID): string
 	{
-		$name = Loc::getMessage("CRM_DEAL_FILTER_{$fieldID}");
-		if($name === null)
-		{
-			$name = \CCrmDeal::GetFieldCaption($fieldID);
-		}
+		$name =
+			Loc::getMessage("CRM_DEAL_FILTER_{$fieldID}")
+			?? Loc::getMessage("CRM_DEAL_FILTER_{$fieldID}_MSGVER_1")
+			?? \CCrmDeal::GetFieldCaption($fieldID)
+		;
+
 		if (!$name && ParentFieldManager::isParentFieldName($fieldID))
 		{
 			$parentEntityTypeId = ParentFieldManager::getEntityTypeIdFromFieldName($fieldID);

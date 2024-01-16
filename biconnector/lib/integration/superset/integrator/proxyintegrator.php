@@ -5,6 +5,7 @@ namespace Bitrix\BIConnector\Integration\Superset\Integrator;
 use Bitrix\BIConnector\Integration\Superset\Integrator\Logger\IntegratorEventLogger;
 use Bitrix\BIConnector\Integration\Superset\Integrator\Logger\IntegratorLogger;
 use Bitrix\BIConnector\Integration\Superset\Model\SupersetDashboardTable;
+use Bitrix\BIConnector\Integration\Superset\SupersetInitializer;
 use Bitrix\Main\Application;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\Error;
@@ -453,6 +454,15 @@ final class ProxyIntegrator implements SupersetIntegrator
 			return $response;
 		}
 		$resultData = $result->getData();
+		if (
+			(int)$resultData['status'] === (int)ProxyIntegratorResponse::HTTP_STATUS_SERVICE_FROZEN
+			&& SupersetInitializer::isSupersetActive()
+		)
+		{
+			$response->setStatus(IntegratorResponse::STATUS_FROZEN);
+			
+			return $response;
+		}
 
 		if (!empty($requiredFields))
 		{
@@ -507,6 +517,11 @@ final class ProxyIntegrator implements SupersetIntegrator
 		if ($response->hasErrors())
 		{
 			$this->logger->logMethodErrors($action, $result->getData()['status'] ?? '400', $response->getErrors());
+		}
+		else if ($response->getStatus() === IntegratorResponse::STATUS_FROZEN)
+		{
+			$response->addError(new Error("superset is frozen"));
+			SupersetInitializer::setSupersetStatus(SupersetInitializer::SUPERSET_STATUS_FROZEN);
 		}
 
 		return new PerformingResult(

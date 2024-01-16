@@ -165,9 +165,9 @@ class CSocServGoogleProxyOAuth extends CSocServGoogleOAuth
 					)
 			)
 			. '&mode=' . $location
-			. (isset($arParams['BACKURL'])
-				? '&redirect_url=' . urlencode($arParams['BACKURL'])
-				: '')
+				. (isset($arParams['BACKURL'])
+					? '&redirect_url=' . urlencode($arParams['BACKURL'])
+					: '')
 			. '&user_token=' . urlencode($this->generateUserToken())
 			. '&hostUrl=' . urlencode(\Bitrix\Main\Engine\UrlManager::getInstance()->getHostUrl())
 		;

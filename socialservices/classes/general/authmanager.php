@@ -4,6 +4,7 @@ use Bitrix\Main\Context;
 use Bitrix\Main\HttpResponse;
 use Bitrix\Main\Application;
 use Bitrix\Socialservices\ContactTable;
+use Bitrix\Socialservices\OAuth\StateService;
 use Bitrix\Socialservices\UserTable;
 
 IncludeModuleLangFile(__FILE__);
@@ -353,11 +354,22 @@ class CSocServAuthManager
 
 		if(isset($_REQUEST["state"]))
 		{
-			parse_str($_REQUEST["state"], $arState);
-
-			if(isset($arState['backurl']))
+			$arState = StateService::getInstance()->getPayload((string)$_REQUEST['state']);
+			if (is_array($arState))
 			{
-				InitURLParam($arState['backurl']);
+				if (!isset($_REQUEST['check_key']) && isset($arState['check_key']))
+				{
+					$_REQUEST['check_key'] = $arState['check_key'];
+				}
+			}
+			else
+			{
+				parse_str($_REQUEST["state"], $arState);
+
+				if (isset($arState['backurl']))
+				{
+					InitURLParam($arState['backurl']);
+				}
 			}
 		}
 
@@ -1438,11 +1450,11 @@ class CSocServAuth
 						if($this->allowChangeOwner)
 						{
 							$dbSocUser = UserTable::getList(array(
-								'filter' => array(
-									'=USER_ID' => $USER->GetID(),
-									'=EXTERNAL_AUTH_ID' => $socservUserFields['EXTERNAL_AUTH_ID']
-								),
-								'select' => array("ID")
+									'filter' => array(
+											'=USER_ID' => $USER->GetID(),
+											'=EXTERNAL_AUTH_ID' => $socservUserFields['EXTERNAL_AUTH_ID']
+									),
+									'select' => array("ID")
 							));
 							if($dbSocUser->fetch())
 							{

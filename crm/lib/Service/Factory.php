@@ -390,7 +390,7 @@ abstract class Factory
 			unset($parameters['select'][$fmIndex]);
 		}
 
-		$isFmInSelect = $fmIndex !== false || in_array('*', $parameters['select'] ?? [], true);
+		$isFmInSelect = $fmIndex !== false;
 
 		$parameters = $this->prepareGetListParameters($parameters);
 

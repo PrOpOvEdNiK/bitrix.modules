@@ -2,10 +2,8 @@
 
 namespace Bitrix\Crm\Restriction;
 
-use Bitrix\Crm\Integration\Intranet\CustomSectionProvider;
 use Bitrix\Crm\Integration\Intranet\ToolsManager;
 use Bitrix\Crm\Service\Container;
-use Bitrix\Crm\Service\Factory\Dynamic;
 use Bitrix\Main\Loader;
 use CUtil;
 
@@ -190,7 +188,7 @@ class AvailabilityManager
 			if (\CCrmOwnerType::isPossibleDynamicTypeId($entityTypeId))
 			{
 				$factory = Container::getInstance()->getFactory($entityTypeId);
-				if ($factory instanceof Dynamic && CustomSectionProvider::hasCustomSection($factory))
+				if ($factory && $factory->isInCustomSection())
 				{
 					self::$entityTypeAvailabilityLocks[$entityTypeId] = $this->getExternalDynamicAvailabilityLock();
 				}

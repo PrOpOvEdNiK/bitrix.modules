@@ -925,7 +925,7 @@ class Chat
 				}
 				if ($transferUserId > 0)
 				{
-					if (!$fakeRelation || in_array($mode, [self::TRANSFER_MODE_MANUAL, self::TRANSFER_MODE_BOT], true))
+					if (!$fakeRelation || in_array($mode, [self::TRANSFER_MODE_MANUAL], true))
 					{
 						$chat->AddUser($this->chat['ID'], $transferUserId, false, true);
 					}
@@ -973,7 +973,7 @@ class Chat
 				]);
 
 				if (
-					in_array($mode, [self::TRANSFER_MODE_MANUAL, self::TRANSFER_MODE_BOT], true)
+					in_array($mode, [self::TRANSFER_MODE_MANUAL], true)
 					&& $session->getData('STATUS') < Session::STATUS_ANSWER
 				)
 				{
@@ -2144,6 +2144,18 @@ class Chat
 									'MESSAGE' => Loc::getMessage('IMOL_CHAT_ASSIGN_OFF'),
 									'SYSTEM' => 'Y',
 								]);
+
+								if (
+									$session->getConfig('CHECK_AVAILABLE') === 'Y'
+									&& (int)$session->getData('STATUS') < Session::STATUS_OPERATOR
+								)
+								{
+									$queueManager = Queue::initialization($session);
+									if (!$queueManager->isOperatorAvailable($params['USER_ID']))
+									{
+										Queue::returnSessionToQueue((int)$session->getData('ID'), Queue::REASON_OPERATOR_DAY_END_SILENT);
+									}
+								}
 							}
 
 							$queueManager->stopLock();
@@ -2200,7 +2212,7 @@ class Chat
 						&& $session->getData('OPERATOR_ID') == $userId
 					)
 					{
-						$crmManager = new Crm($session);
+						$crmManager = $session->getCrmManager();
 						if ($crmManager->isLoaded())
 						{
 							$crmManager
@@ -2687,9 +2699,7 @@ class Chat
 						));
 						if($loadSession)
 						{
-							$crmManager = new Crm($session);
-
-							$crmManager->setOperatorId($fields['AUTHOR_ID'], false);
+							$session->getCrmManager()->setOperatorId($fields['AUTHOR_ID'], false);
 						}
 					}
 					//END CRM
@@ -2788,6 +2798,21 @@ class Chat
 	public static function getFieldName($field)
 	{
 		return self::$fieldAssoc[$field];
+	}
+
+	public static function sendMessageFromUser(string $message, int $chatId, int $userId): int
+	{
+		$attach = new \CIMMessageParamAttach();
+		$attach->AddMessage(Loc::getMessage('IMOL_CHAT_MESSAGE_SENT_AUTOMATICALLY'));
+		$messageFields = [
+			'MESSAGE_TYPE' => IM_MESSAGE_CHAT,
+			'TO_CHAT_ID' => $chatId,
+			'MESSAGE' => $message,
+			'FROM_USER_ID' => $userId,
+			'ATTACH' => $attach,
+		];
+
+		return (int)\CIMMessenger::Add($messageFields);
 	}
 
 	/**

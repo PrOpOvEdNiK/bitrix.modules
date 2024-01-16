@@ -12,14 +12,16 @@ class Dispatcher
 	/** @var AsyncRecovery[] */
 	private array $recoveryList;
 
+	private Config $config;
+
+	private AvailableRecoveriesFactory $availableRecoveriesFactory;
+
 	public function __construct()
 	{
-		$this->recoveryList = [
-			new CountableCompleted(),
-			new CountableDeleted(),
-			new UncompletedCompleted(),
-			new UncompletedDeleted(),
-		];
+		$this->config = Config::getInstance();
+		$this->availableRecoveriesFactory = AvailableRecoveriesFactory::getInstance();
+
+		$this->recoveryList = $this->availableRecoveriesFactory->make();
 	}
 
 	public function execute(ProblemList $problemList): void

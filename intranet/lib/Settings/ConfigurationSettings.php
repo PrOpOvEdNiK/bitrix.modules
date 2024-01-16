@@ -502,7 +502,7 @@ class ConfigurationSettings extends AbstractSettings
 		return Option::get(
 			'bitrix24',
 			'buy_tariff_by_all',
-			'N'
+			'Y'
 		);
 	}
 

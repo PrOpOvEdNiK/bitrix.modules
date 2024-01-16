@@ -44,15 +44,7 @@ final class DashboardRepository
 			}
 			else
 			{
-				$dashboardData = new Dto\Dashboard(
-					id: 0,
-					title: $dashboard->getTitle() ?? '',
-					dashboardStatus: Dto\Dashboard::STATUS_DATA_LOAD,
-					url: '',
-					editUrl: '',
-					isEditable: false,
-					nativeFilterConfig: [],
-				);
+				$dashboardData = null;
 			}
 
 			$dashboardItem = new Dashboard(
@@ -93,23 +85,6 @@ final class DashboardRepository
 		}
 
 		return $dashboard;
-	}
-
-	public function getExternalIdByInnerId(int $innerId): ?int
-	{
-		$result = SupersetDashboardTable::getList([
-			'select' => ['EXTERNAL_ID'],
-			'filter' => [
-				'=ID' => $innerId,
-			],
-		])->fetch();
-
-		if ($result === null)
-		{
-			return null;
-		}
-
-		return (int)$result['EXTERNAL_ID'];
 	}
 
 	/**

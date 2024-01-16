@@ -6,8 +6,10 @@ use Bitrix\Crm\Activity\IncomingChannel;
 use Bitrix\Crm\Activity\Provider\Call;
 use Bitrix\Crm\ActivityTable;
 use Bitrix\Crm\Integration\AI\AIManager;
+use Bitrix\Crm\Integration\AI\Analytics;
 use Bitrix\Crm\Integration\AI\Dto\SummarizeCallTranscriptionPayload;
 use Bitrix\Crm\Integration\AI\Dto\TranscribeCallRecordingPayload;
+use Bitrix\Crm\Integration\AI\ErrorCode;
 use Bitrix\Crm\Integration\AI\JobRepository;
 use Bitrix\Crm\Integration\AI\Result;
 use Bitrix\Crm\Integration\StorageType;
@@ -155,7 +157,13 @@ final class Orchestrator
 					'{date}: Trying to autostart operation with type {operationType}' . PHP_EOL,
 					['operationType' => TranscribeCallRecording::TYPE_ID]
 				);
-				AIManager::launchCallRecordingTranscription($activityId, $userId, $storageTypeId, max($storageElementIds));
+				$result = AIManager::launchCallRecordingTranscription(
+					$activityId,
+					$userId,
+					$storageTypeId,
+					max($storageElementIds)
+				);
+				$this->sendAnalyticsWrapper($result, $activityFields);
 			}
 		}
 	}
@@ -217,7 +225,13 @@ final class Orchestrator
 					'{date}: Trying to autostart operation with type {operationType}' . PHP_EOL,
 					['operationType' => TranscribeCallRecording::TYPE_ID]
 				);
-				AIManager::launchCallRecordingTranscription($activityId, $userId, $storageTypeId, max($storageElementIds));
+				$result = AIManager::launchCallRecordingTranscription(
+					$activityId,
+					$userId,
+					$storageTypeId,
+					max($storageElementIds)
+				);
+				$this->sendAnalyticsWrapper($result, $activityFields);
 			}
 		}
 	}
@@ -225,6 +239,29 @@ final class Orchestrator
 	public function findPossibleFillFieldsTarget(int $activityId): ?ItemIdentifier
 	{
 		return $this->findPossibleFillFieldsTargetByBindings(\CCrmActivity::GetBindings($activityId));
+	}
+
+	private function sendAnalyticsWrapper(Result $result, array $activityFields): void
+	{
+		$status = Analytics::STATUS_SUCCESS;
+		if (!$result->isSuccess())
+		{
+			$status = Analytics::STATUS_ERROR_B24;
+			$error = $result->getErrors()[0] ?? null;
+			if ($error && $error->getCode() === ErrorCode::AI_ENGINE_LIMIT_EXCEEDED)
+			{
+				$status = Analytics::STATUS_ERROR_NO_LIMITS;
+			}
+		}
+
+		Analytics::getInstance()->sendAnalytics(
+			Analytics::CONTEXT_EVENT_CALL,
+			Analytics::CONTEXT_TYPE_AUTO,
+			Analytics::CONTEXT_ELEMENT_COPILOT_BTN,
+			$status,
+			(int)($activityFields['OWNER_TYPE_ID'] ?? 0),
+			(string)($activityFields['ORIGIN_ID'] ?? ''),
+		);
 	}
 
 	private function findPossibleFillFieldsTargetByBindings(array $bindings): ?ItemIdentifier

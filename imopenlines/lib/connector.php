@@ -367,24 +367,27 @@ class Connector
 
 							if (isset($params['message']['extraData']['OPERATOR_ID']))
 							{
-								$attach = new \CIMMessageParamAttach();
-								if (isset($params['message']['extraData']['SOURCE_MESSAGE_ID']))
-								{
-									$message = new \Bitrix\Im\V2\Message($params['message']['extraData']['SOURCE_MESSAGE_ID']);
-									$attach->AddMessage($message->getMessage());
-								}
-								else
-								{
-									$attach->AddMessage($params['message']['text']);
-								}
-
-								\Bitrix\ImOpenLines\Im::addMessage([
+								$messageParams = [
 									'TO_CHAT_ID' => $session->getData('CHAT_ID'),
 									'MESSAGE' => $params['message']['text'],
 									'SYSTEM' => 'Y',
 									'SKIP_COMMAND' => 'Y',
 									'URL_PREVIEW' => 'N',
-								]);
+									'SKIP_CONNECTOR' => 'Y',
+								];
+
+								if (isset($params['message']['extraData']['SOURCE_MESSAGE_ID']))
+								{
+									$message = new \Bitrix\Im\V2\Message($params['message']['extraData']['SOURCE_MESSAGE_ID']);
+									if ($message->getAuthorId() === (int)$params['message']['user_id'])
+									{
+										$messageParams['FROM_USER_ID'] = $message->getAuthorId();
+										unset($messageParams['SYSTEM']);
+									}
+
+								}
+
+								\Bitrix\ImOpenLines\Im::addMessage($messageParams);
 							}
 
 							if ($session->getData('OPERATOR_ID') > 0)
@@ -459,11 +462,23 @@ class Connector
 							)
 							{
 								$sourceSession = ImOpenLines\Model\SessionTable::getRowById((int)$params['message']['extraData']['SOURCE_SESSION_ID']);
+
 								ImOpenLines\Im\Messages\Session::sendMessageStartSessionByMultiDialogToParentChat(
 									(int)$sourceSession['CHAT_ID'],
 									(int)$session->getData('ID'),
 									(int)$session->getData('CHAT_ID')
 								);
+
+								if (!empty($sourceSession['EXTRA_TARIFF']))
+								{
+									$session->update([
+										'EXTRA_REGISTER' => $sourceSession['EXTRA_REGISTER'],
+										'EXTRA_TARIFF' => $sourceSession['EXTRA_TARIFF'],
+										'EXTRA_USER_LEVEL' => $sourceSession['EXTRA_USER_LEVEL'],
+										'EXTRA_PORTAL_TYPE' => $sourceSession['EXTRA_PORTAL_TYPE'],
+										'EXTRA_URL' => $sourceSession['EXTRA_URL'],
+									]);
+								}
 
 								$result = [
 									'SESSION_ID' => $session->getData('ID'),
@@ -707,7 +722,7 @@ class Connector
 	 */
 	protected function callMessageTrigger(Session $session, $messageId, $messageData)
 	{
-		$crm = new Crm($session);
+		$crm = $session->getCrmManager();
 		$result = new Result();
 
 		if (
@@ -2126,34 +2141,15 @@ class Connector
 			$hasTrackerRef = !empty($tracker->findExpectationByTrackId($fields['ref']['source'])); //todo: Replace it with session method
 		}
 
-			// start parameter
-		if ($hasTrackerRef)
-		{
-			$hasSession = $session->load([
-				'USER_CODE' => self::getUserCode($fields['connector']),
-				'CONFIG_ID' => $fields['connector']['line_id'],
-				'USER_ID' => $fields['connector']['user_id'],
-				'SOURCE' => $fields['connector']['connector_id'],
-				'MODE' => ImOpenLines\Session::MODE_INPUT,
-				'SKIP_CRM' => 'Y',// do not auto create crm objects
-			]);
-
-			if ($hasSession)
-			{
-				// CRM expectation
-				$tracker->bindExpectationToChat($fields['ref']['source'], $chat, $session);
-			}
-		}
-		else
-		{
-			$session->load([
-				'USER_CODE' => self::getUserCode($fields['connector']),
-				'CONFIG_ID' => $fields['connector']['line_id'],
-				'USER_ID' => $fields['connector']['user_id'],
-				'SOURCE' => $fields['connector']['connector_id'],
-				'MODE' => ImOpenLines\Session::MODE_INPUT,
-			]);
-		}
+		// start parameter
+		$session->load([
+			'USER_CODE' => self::getUserCode($fields['connector']),
+			'CONFIG_ID' => $fields['connector']['line_id'],
+			'USER_ID' => $fields['connector']['user_id'],
+			'SOURCE' => $fields['connector']['connector_id'],
+			'MODE' => ImOpenLines\Session::MODE_INPUT,
+			'CRM_TRACKER_REF' => $hasTrackerRef ? $fields['ref']['source'] : '',
+		]);
 
 		return true;
 	}

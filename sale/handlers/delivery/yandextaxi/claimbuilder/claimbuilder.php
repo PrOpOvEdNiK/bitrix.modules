@@ -35,11 +35,11 @@ use Sale\Handlers\Delivery\YandexTaxi\ServiceContainer;
  */
 final class ClaimBuilder
 {
-	private const SOURCE_ROUTE_POINT_ID = 1;
+	public const SOURCE_ROUTE_POINT_ID = 1;
 	private const SOURCE_ROUTE_POINT_VISIT_ORDER = 1;
 	private const SOURCE_ROUTE_POINT_TYPE = 'source';
 
-	private const DESTINATION_ROUTE_POINT_ID = 2;
+	public const DESTINATION_ROUTE_POINT_ID = 2;
 	private const DESTINATION_ROUTE_POINT_VISIT_ORDER = 2;
 	private const DESTINATION_ROUTE_POINT_TYPE = 'destination';
 
@@ -101,6 +101,7 @@ final class ClaimBuilder
 		}
 		/** @var Address $addressFrom */
 		$addressFrom = $addressFromResult->getData()['ADDRESS'];
+		$addressFrom->setId(self::SOURCE_ROUTE_POINT_ID);
 
 		$addressToResult = $this->buildAddressTo($shipment);
 		if (!$addressToResult->isSuccess())
@@ -109,6 +110,7 @@ final class ClaimBuilder
 		}
 		/** @var Address $addressFrom */
 		$addressTo = $addressToResult->getData()['ADDRESS'];
+		$addressTo->setId(self::DESTINATION_ROUTE_POINT_ID);
 
 		/**
 		 * General comment
@@ -199,7 +201,7 @@ final class ClaimBuilder
 					->setCostCurrency((string)$basketItem->getCurrency())
 					->setQuantity((int)ceil($shipmentItem->getQuantity()))
 					->setPickupPoint(self::SOURCE_ROUTE_POINT_ID)
-					->setDroppofPoint(self::DESTINATION_ROUTE_POINT_ID)
+					->setDropoffPoint(self::DESTINATION_ROUTE_POINT_ID)
 			);
 		}
 

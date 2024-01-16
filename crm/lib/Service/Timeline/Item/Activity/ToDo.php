@@ -229,7 +229,7 @@ class ToDo extends Activity
 	private function buildMobilePingListBlock(): ?ContentBlock
 	{
 		$emptyStateText = Loc::getMessage('CRM_TIMELINE_ITEM_TODO_PING_OFFSETS_EMPTY_STATE');
-		$selectorTitle = Loc::getMessage('CRM_TIMELINE_ITEM_TODO_PING_OFFSETS_SELECTOR_TITLE');
+		$selectorTitle = Loc::getMessage('CRM_TIMELINE_ITEM_TODO_PING_OFFSETS_SELECTOR_TITLE_MSGVER_1');
 
 		if ($this->isScheduled() && $this->hasUpdatePermission())
 		{

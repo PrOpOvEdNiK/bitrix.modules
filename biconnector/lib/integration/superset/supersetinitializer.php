@@ -18,7 +18,8 @@ use Bitrix\Main\Error;
 final class SupersetInitializer
 {
 	public const SUPERSET_STATUS_READY = 'READY';
-	public const SUPERSET_STATUS_LOAD= 'LOAD';
+	public const SUPERSET_STATUS_LOAD = 'LOAD';
+	public const SUPERSET_STATUS_FROZEN = 'FROZEN';
 	public const SUPERSET_STATUS_DISABLED = 'DISABLED';
 	public const SUPERSET_STATUS_DOESNT_EXISTS = 'DOESNT_EXISTS'; // If portal startup superset first time
 
@@ -125,6 +126,12 @@ final class SupersetInitializer
 		self::onSupersetCreated();
 	}
 
+	public static function unfreezeSuperset(): void
+	{
+		self::setSupersetStatus(self::SUPERSET_STATUS_READY);
+		DashboardManager::notifySupersetUnfreeze();
+	}
+
 	public static function onSupersetCreated(): void
 	{
 		self::installInitialDashboards();
@@ -177,13 +184,30 @@ final class SupersetInitializer
 		return self::getSupersetStatus() === self::SUPERSET_STATUS_READY;
 	}
 
+	public static function isSupersetLoad(): bool
+	{
+		$possibleLoadStatus = [
+			self::SUPERSET_STATUS_LOAD,
+			self::SUPERSET_STATUS_FROZEN,
+		];
+
+		return in_array(self::getSupersetStatus(), $possibleLoadStatus, true);
+	}
+
 	public static function onUnsuccessfulSupersetStartup(Error ...$errors): void
 	{
-		SupersetInitializerLogger::logErrors($errors);
+		if (!empty($errors))
+		{
+			SupersetInitializerLogger::logErrors($errors);
+		}
+		else
+		{
+			SupersetInitializerLogger::logErrors([new Error('undefined error while startup superset')]);
+		}
 
-		self::setSupersetStatus(self::SUPERSET_STATUS_DISABLED);
 		$marketManager = MarketDashboardManager::getInstance();
 		$systemDashboards = $marketManager->getSystemDashboardApps();
+
 		$existingDashboardInfoList = SupersetDashboardTable::getList([
 			'select' => ['ID', 'APP_ID', 'STATUS'],
 			'filter' => [
@@ -192,10 +216,17 @@ final class SupersetInitializer
 			],
 		])->fetchAll();
 
+		if (empty($existingDashboardInfoList))
+		{
+			self::setSupersetStatus(self::SUPERSET_STATUS_DOESNT_EXISTS);
+			return;
+		}
+
+		self::setSupersetStatus(self::SUPERSET_STATUS_DISABLED);
+
 		SupersetDashboardTable::updateMulti(array_column($existingDashboardInfoList, 'ID'), [
 			'STATUS' => SupersetDashboardTable::DASHBOARD_STATUS_FAILED,
 		]);
-
 
 		$notifyList = [];
 		foreach ($existingDashboardInfoList as $dashboardInfo)

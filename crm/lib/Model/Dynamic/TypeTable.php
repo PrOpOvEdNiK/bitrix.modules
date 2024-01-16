@@ -458,7 +458,7 @@ class TypeTable extends UserField\Internal\TypeDataManager
 			return $result;
 		}
 
-		if (!$DB->Query('CREATE FULLTEXT INDEX '.$entity->getDBTableName().'_search ON '.$entity->getDBTableName().'(SEARCH_CONTENT)', true))
+		if (!$DB->CreateIndex($entity->getDBTableName().'_search', $entity->getDBTableName(), ['SEARCH_CONTENT'], false, true))
 		{
 			$result->addError(new Error('Could not create item fulltext index'));
 		}

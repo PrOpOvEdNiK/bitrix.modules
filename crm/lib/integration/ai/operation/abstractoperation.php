@@ -8,6 +8,7 @@ use Bitrix\AI\Quality;
 use Bitrix\Crm\Badge;
 use Bitrix\Crm\Dto\Dto;
 use Bitrix\Crm\Integration\AI\AIManager;
+use Bitrix\Crm\Integration\AI\Analytics;
 use Bitrix\Crm\Integration\AI\ErrorCode;
 use Bitrix\Crm\Integration\AI\Model\EO_Queue;
 use Bitrix\Crm\Integration\AI\Model\QueueTable;
@@ -139,7 +140,7 @@ abstract class AbstractOperation
 				['class' => static::class, 'target' => $this->target, 'operationType' => static::TYPE_ID],
 			);
 
-			static::notifyAboutJobError($result, false);
+			static::notifyAboutJobError($result, false, false);
 
 			return $result->addError(ErrorCode::getAIDisabledError(['sliderCode' => AIManager::AI_DISABLED_SLIDER_CODE]));
 		}
@@ -151,7 +152,7 @@ abstract class AbstractOperation
 				['class' => static::class, 'target' => $this->target, 'operationType' => static::TYPE_ID],
 			);
 
-			static::notifyAboutJobError($result, false);
+			static::notifyAboutJobError($result, false, false);
 
 			return $result->addError(ErrorCode::getNotSuitableTargetError());
 		}
@@ -176,7 +177,7 @@ abstract class AbstractOperation
 				],
 			);
 
-			static::notifyAboutJobError($result, false);
+			static::notifyAboutJobError($result, false, false);
 
 			$customData = [
 				'isAiMarketplaceAppsExist' => $this->isAiMarketplaceAppsExist(),
@@ -206,7 +207,7 @@ abstract class AbstractOperation
 				],
 			);
 
-			static::notifyAboutJobError($result, false);
+			static::notifyAboutJobError($result, false, false);
 
 			return $result->addError(
 				ErrorCode::getAILimitOfRequestsExceededError(['sliderCode' => $sliderCode])
@@ -296,12 +297,13 @@ abstract class AbstractOperation
 		if ($error instanceof Error)
 		{
 			AIManager::logger()->critical(
-				'{date}: {class}: Error while adding AI job for target {target} in operation {operationType}: {error}' . PHP_EOL,
+				'{date}: {class}: Error while adding AI job for target {target} in operation {operationType} for activity{activity}: {error}' . PHP_EOL,
 				[
 					'class' => static::class,
 					'target' => $this->target,
 					'operationType' => static::TYPE_ID,
 					'error' => $error,
+					'activity' => self::getTargetRealId($this->target, $this->parentJobId),
 				],
 			);
 
@@ -316,12 +318,9 @@ abstract class AbstractOperation
 
 			return $result;
 		}
-		elseif (Loader::includeModule('bitrix24'))
+		else
 		{
-			$logHost = Application::getInstance()->getContext()->getServer()->getHttpHost();
-			$logStep = static::class;
-			$logDate = (new \Bitrix\Main\Type\DateTime())->toString();
-			AddMessage2Log("crm.integration.AI {$logHost} operationLaunched {$logDate}: started step {$logStep} with hash {$hash}", 'crm');
+			self::logOperationProgress('operationLaunched', $this->target, (string)$hash, $this->parentJobId);
 		}
 
 		if ($previousJob instanceof EO_Queue)
@@ -360,19 +359,20 @@ abstract class AbstractOperation
 		if (!$dbSaveResult->isSuccess())
 		{
 			AIManager::logger()->critical(
-				'{date}: {class}: Errors while saving job to CRM DB for target {target} in operation {operationType} for hash {hash}: {errors}' . PHP_EOL,
+				'{date}: {class}: Errors while saving job to CRM DB for target {target} in operation {operationType} for hash {hash} for activity{activity}: {errors}' . PHP_EOL,
 				[
 					'class' => static::class,
 					'target' => $this->target,
 					'operationType' => static::TYPE_ID,
 					'errors' => $dbSaveResult->getErrors(),
 					'hash' => $hash,
+					'activity' => self::getTargetRealId($this->target, $this->parentJobId),
 				],
 			);
 
 			$result->addErrors($dbSaveResult->getErrors());
 
-			static::notifyAboutJobError($result);
+			static::notifyAboutJobError($result, true, false);
 
 			return $result;
 		}
@@ -496,11 +496,12 @@ abstract class AbstractOperation
 		if (!($aiResult instanceof \Bitrix\AI\Result))
 		{
 			AIManager::logger()->critical(
-				'{date}: {class}: There is no AI result in event {event} for job {job}' . PHP_EOL,
+				'{date}: {class}: There is no AI result in event {event} for job {job} for activity{activity}' . PHP_EOL,
 				[
 					'event' => $event,
 					'job' => $job->collectValues(fieldsMask: FieldTypeMask::FLAT),
 					'class' => static::class,
+					'activity' => self::extractActivityIdFromJob($job),
 				],
 			);
 
@@ -516,11 +517,13 @@ abstract class AbstractOperation
 		if ($payload->hasValidationErrors())
 		{
 			AIManager::logger()->critical(
-				'{date}: {class}: Error validating payload from AI result: errors {errors}, AI result {aiResult}' . PHP_EOL,
+				'{date}: {class}: Error validating payload from AI result with hash {hash} for activity{activity}: errors {errors}, AI result {aiResult}' . PHP_EOL,
 				[
 					'class' => static::class,
 					'errors' => $payload->getValidationErrors()->toArray(),
 					'aiResult' => $aiResult,
+					'hash' => $job->requireHash(),
+					'activity' => self::extractActivityIdFromJob($job),
 				],
 			);
 
@@ -548,10 +551,12 @@ abstract class AbstractOperation
 		if (!$dbSaveResult->isSuccess())
 		{
 			AIManager::logger()->critical(
-				'{date}: {class}: Error while saving results to CRM DB: {errors}' . PHP_EOL,
+				'{date}: {class}: Error while saving results to CRM DB with hash {hash} for activity{activity}: {errors}' . PHP_EOL,
 				[
 					'class' => static::class,
 					'errors' => $dbSaveResult->getErrors(),
+					'hash' => $job->requireHash(),
+					'activity' => self::extractActivityIdFromJob($job),
 				],
 			);
 
@@ -559,7 +564,7 @@ abstract class AbstractOperation
 
 			$dummyResult->addErrors($dbSaveResult->getErrors());
 
-			static::notifyAboutJobError($dummyResult);
+			static::notifyAboutJobError($dummyResult, true, false);
 
 			return self::saveErrorToJobAndReturnResult($job, $dummyResult);
 		}
@@ -569,6 +574,7 @@ abstract class AbstractOperation
 		if ($result->isSuccess())
 		{
 			static::onAfterSuccessfulJobFinish($result);
+			self::logOperationProgress('operationComplete',$result->getTarget(), $job->requireHash(), $result->getParentJobId());
 
 			AIManager::logger()->debug(
 				'{date}: {class}: Notifying timeline about operation finish'
@@ -583,7 +589,7 @@ abstract class AbstractOperation
 		}
 		else
 		{
-			static::notifyAboutJobError($result);
+			static::notifyAboutJobError($result, true, false);
 		}
 
 		AIManager::logger()->debug(
@@ -602,9 +608,9 @@ abstract class AbstractOperation
 	 * @template T of \Bitrix\Main\Result
 	 *
 	 * @param EO_Queue $job
-	 * @param T $result
+	 * @param \Bitrix\Main\Result $result
 	 *
-	 * @return T
+	 * @return \Bitrix\Main\Result
 	 */
 	private static function saveErrorToJobAndReturnResult(EO_Queue $job, \Bitrix\Main\Result $result): \Bitrix\Main\Result
 	{
@@ -624,8 +630,13 @@ abstract class AbstractOperation
 		if (!$dbSaveResult->isSuccess())
 		{
 			AIManager::logger()->critical(
-				'{date}: {class}: Error while trying to save error info to CRM DB: {errors}',
-				['class' => static::class, 'errors' => $dbSaveResult->getErrors()],
+				'{date}: {class}: Error while trying to save error info to CRM DB with hash {hash} for activity{activity}: {errors}',
+				[
+					'class' => static::class,
+					'errors' => $dbSaveResult->getErrors(),
+					'hash' => $job->requireHash(),
+					'activity' => self::extractActivityIdFromJob($job),
+				],
 			);
 		}
 
@@ -638,7 +649,11 @@ abstract class AbstractOperation
 
 	abstract protected static function notifyTimelineAfterSuccessfulJobFinish(Result $result): void;
 
-	abstract protected static function notifyAboutJobError(Result $result, bool $withSyncBadges = true): void;
+	abstract protected static function notifyAboutJobError(
+		Result $result,
+		bool $withSyncBadges = true,
+		bool $withSendAnalytics = true
+	): void;
 
 	final protected static function notifyTimelinesAboutActivityUpdate(int $activityId, bool $forceUpdateHistoryItems = false): void
 	{
@@ -653,20 +668,12 @@ abstract class AbstractOperation
 
 	final protected static function syncBadges(int $activityId, string $badgeValue = ''): void
 	{
-		$activity = Container::getInstance()->getActivityBroker()->getById($activityId);
-		if (!$activity)
+		$itemIdentifier = (new Orchestrator())->findPossibleFillFieldsTarget($activityId);
+		if (!$itemIdentifier)
 		{
 			return;
 		}
 
-		$ownerTypeId = (int)($activity['OWNER_TYPE_ID'] ?? 0);
-		$ownerId = (int)($activity['OWNER_ID'] ?? 0);
-		if ($ownerTypeId <= 0 || $ownerId <= 0)
-		{
-			return;
-		}
-
-		$itemIdentifier = new ItemIdentifier($ownerTypeId, $ownerId);
 		if (empty($badgeValue))
 		{
 			Badge\Badge::deleteByEntity($itemIdentifier, Badge\Badge::AI_CALL_FIELDS_FILLING_RESULT);
@@ -679,9 +686,28 @@ abstract class AbstractOperation
 				CCrmOwnerType::Activity,
 				$activityId,
 			);
+
 			$badge->bind($itemIdentifier, $sourceIdentifier);
 			Monitor::getInstance()->onBadgesSync($itemIdentifier);
 		}
+	}
+
+	final protected static function sendAnalyticsWrapper(int $activityId, string $status): void
+	{
+		$activity = Container::getInstance()->getActivityBroker()->getById($activityId);
+		if (!$activity)
+		{
+			return;
+		}
+
+		Analytics::getInstance()->sendAnalytics(
+			Analytics::CONTEXT_EVENT_CALL,
+			Analytics::CONTEXT_TYPE_UNKNOWN,
+			Analytics::CONTEXT_ELEMENT_COPILOT_BTN,
+			$status,
+			(int)($activity['OWNER_TYPE_ID'] ?? 0),
+			(string)($activity['ORIGIN_ID'] ?? ''),
+		);
 	}
 
 	public static function onQueueJobFail(Event $event, EO_Queue $job): Result
@@ -702,12 +728,13 @@ abstract class AbstractOperation
 		}
 
 		AIManager::logger()->critical(
-			'{date}: {class}: Job {$id} (hash {hash}) failed because we have received error from AI queue: {error}' . PHP_EOL,
+			'{date}: {class}: Job {id} (hash {hash}) for activity{activity} failed because we have received error from AI queue: {error}' . PHP_EOL,
 			[
 				'class' => static::class,
 				'id' => $job->getId(),
 				'hash' => $job->requireHash(),
 				'error' => $error,
+				'activity' => self::extractActivityIdFromJob($job),
 			],
 		);
 
@@ -804,4 +831,42 @@ abstract class AbstractOperation
 	}
 
 	abstract protected static function extractPayloadFromAIResult(\Bitrix\AI\Result $result, EO_Queue $job): Dto;
+
+	protected static function logOperationProgress(string $operation, ItemIdentifier $target, string $hash, ?int $parentJobId): void
+	{
+		if (Loader::includeModule('bitrix24'))
+		{
+			$logHost = Application::getInstance()->getContext()->getServer()->getHttpHost();
+			$logStep = static::class;
+			$logDate = (new \Bitrix\Main\Type\DateTime())->toString();
+			$logTarget = self::getTargetRealId($target, $parentJobId);
+			AddMessage2Log("crm.integration.AI {$logHost} {$operation} {$logDate}: started step {$logStep} with hash {$hash} for activity{$logTarget}", 'crm');
+		}
+	}
+
+	protected static function getTargetRealId(ItemIdentifier $target, ?int $parentJobId): int
+	{
+		if ($target->getEntityTypeId() !== CCrmOwnerType::Activity)
+		{
+			$parentJob = QueueTable::query()
+				->setSelect(['ID', 'ENTITY_ID', 'ENTITY_TYPE_ID'])
+				->where('ID', $parentJobId)
+				->setLimit(1)
+				->fetchObject()
+			;
+			if ($parentJob?->getEntityTypeId() === CCrmOwnerType::Activity)
+			{
+				return $parentJob->getEntityId();
+			}
+
+			return 0;
+		}
+
+		return $target->getEntityId();
+	}
+
+	private static function extractActivityIdFromJob(EO_Queue $job): int
+	{
+		return self::getTargetRealId(new ItemIdentifier($job->getEntityTypeId(), $job->getEntityId()), $job->getParentId());
+	}
 }

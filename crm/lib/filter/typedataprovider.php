@@ -166,6 +166,11 @@ class TypeDataProvider extends EntityDataProvider
 
 			foreach ($sections as $row)
 			{
+				if ($row['SECTION_TITLE'] === null)
+				{
+					continue;
+				}
+
 				$title = $row['SECTION_TITLE'];
 				$id = $row['CUSTOM_SECTION_ID'];
 				$items[$id] = $title;

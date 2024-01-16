@@ -5,6 +5,7 @@ namespace Bitrix\Crm\Integration\AI\Operation;
 use Bitrix\Crm\Activity\Provider\Call;
 use Bitrix\Crm\Badge;
 use Bitrix\Crm\Dto\Dto;
+use Bitrix\Crm\Integration\AI\Analytics;
 use Bitrix\Crm\Integration\AI\Dto\SummarizeCallTranscriptionPayload;
 use Bitrix\Crm\Integration\AI\Model\EO_Queue;
 use Bitrix\Crm\Integration\AI\Result;
@@ -93,7 +94,11 @@ class SummarizeCallTranscription extends AbstractOperation
 		}
 	}
 
-	protected static function notifyAboutJobError(Result $result, bool $withSyncBadges = true): void
+	protected static function notifyAboutJobError(
+		Result $result,
+		bool $withSyncBadges = true,
+		bool $withSendAnalytics = true
+	): void
 	{
 		$activityId = $result->getTarget()?->getEntityId();
 		$nextTarget = (new Orchestrator())->findPossibleFillFieldsTarget($activityId);
@@ -115,6 +120,11 @@ class SummarizeCallTranscription extends AbstractOperation
 			}
 
 			self::notifyTimelinesAboutActivityUpdate($activityId);
+
+			if ($withSendAnalytics)
+			{
+				self::sendAnalyticsWrapper($activityId, Analytics::STATUS_ERROR_GPT);
+			}
 		}
 	}
 

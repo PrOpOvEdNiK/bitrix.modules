@@ -1229,10 +1229,15 @@ class CCalendarEvent
 			$event['SECT_ID'] = $event['SECTION_ID'] ?? null;
 			$event['IS_MEETING'] = (int)($event['IS_MEETING'] ?? 0) > 0;
 
-			if (!empty($event['NAME']))
+			if (empty($event['NAME']))
+			{
+				$event['NAME'] = Loc::getMessage('EC_T_NEW_EVENT');
+			}
+			else
 			{
 				$event['NAME'] = Emoji::decode($event['NAME']);
 			}
+
 
 			if (!empty($event['DESCRIPTION']))
 			{

@@ -12,6 +12,7 @@ abstract class IntegratorResponse
 	public const STATUS_NO_ACCESS = 403;
 	public const STATUS_NOT_FOUND = 404;
 	public const STATUS_SERVER_ERROR = 500;
+	public const STATUS_FROZEN = 555;
 	public const STATUS_UNKNOWN = 0;
 
 	protected int $status;
@@ -36,6 +37,7 @@ abstract class IntegratorResponse
 			self::STATUS_NO_ACCESS,
 			self::STATUS_IN_PROGRESS,
 			self::STATUS_SERVER_ERROR,
+			self::STATUS_FROZEN,
 		];
 
 		if (!in_array($status, $availableStatuses, true))

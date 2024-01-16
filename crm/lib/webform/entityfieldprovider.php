@@ -171,7 +171,7 @@ class EntityFieldProvider
 		return $fields;
 	}
 
-	public static function getAllFieldsDescription()
+	public static function getAllFieldsDescription(?int $requisitePresetId = null)
 	{
 		$result = [];
 
@@ -179,7 +179,7 @@ class EntityFieldProvider
 			\CCrmOwnerType::SmartDocument,
 		];
 
-		$availableFields = EntityFieldProvider::getFields($hiddenTypes);
+		$availableFields = EntityFieldProvider::getFields($hiddenTypes, $requisitePresetId);
 		foreach($availableFields as $fieldAvailable)
 		{
 			$result[] = self::getFieldDescription($fieldAvailable);

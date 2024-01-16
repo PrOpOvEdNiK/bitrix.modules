@@ -120,7 +120,7 @@ class Calendar
 				? \CUtil::JSEscape(Loc::getMessage('CRM_CALENDAR_VIEW_MODE_SPOTLIGHT_LEAD'))
 				: \CUtil::JSEscape(Loc::getMessage('CRM_CALENDAR_VIEW_MODE_SPOTLIGHT_DEAL'));
 
-			$message .= ' <a href="javascript:void(0);" onclick="BX.Helper.show(\\\'redirect=detail&code=7481073\\\')">'.Loc::getMessage('CRM_CALENDAR_HELP_LINK').'</a>';
+			$message .= ' <a href="javascript:void(0);" onclick="BX.Helper.show(\\\'redirect=detail&code=18797220\\\')">'.Loc::getMessage('CRM_CALENDAR_HELP_LINK').'</a>';
 			?>
 			<script type="text/javascript">
 				BX.ready(function()

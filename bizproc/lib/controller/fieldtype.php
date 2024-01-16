@@ -73,8 +73,35 @@ class FieldType extends Base
 		);
 	}
 
-	public function renderControlCollectionAction(array $documentType, array $controlsData): HtmlContent
+	public function renderControlCollectionAction(): ?HtmlContent
 	{
+		if (!$this->request->isJson())
+		{
+			// Should add some error message?
+			$this->addError(
+				new Error('', 0, ['reason' => 'Wrong request format. Expected json in request body.'])
+			);
+
+			return null;
+		}
+
+		$documentType = $this->request->getJsonList()->get('documentType');
+		$controlsData = $this->request->getJsonList()->get('controlsData');
+
+		$createInternalError = static fn ($reason) => new Error('', 0, ['reason' => $reason]);
+
+		if (!is_array($documentType))
+		{
+			$this->addError(
+				$createInternalError('Wrong request format. Expected documentType in request json body.')
+			);
+		}
+		if (!is_array($controlsData))
+		{
+			$this->addError(
+				$createInternalError('Wrong request format. Expected controlsData in request json body.')
+			);
+		}
 		$renderer = new Bizproc\Controller\Response\RenderControlCollectionContent();
 
 		foreach ($controlsData as $data)

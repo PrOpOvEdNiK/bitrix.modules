@@ -17,7 +17,7 @@ use Bitrix\Main\Web\MimeType;
 class UrlPreview
 {
 	const SIGN_SALT = 'url_preview';
-	const USER_AGENT = 'Bitrix link preview';
+	const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 (Bitrix link preview)';
 	/** @var int Maximum allowed length of the description. */
 	const MAX_DESCRIPTION = 500;
 	/** @var int Maximum allowed picture size */
@@ -740,7 +740,7 @@ class UrlPreview
 				$metadata['DESCRIPTION'] = mb_substr($metadata['DESCRIPTION'], 0, static::MAX_DESCRIPTION);
 			}
 
-			if (!is_array($metadata['EXTRA']))
+			if (!isset($metadata['EXTRA']) || !is_array($metadata['EXTRA']))
 			{
 				$metadata['EXTRA'] = array();
 			}
@@ -1064,7 +1064,7 @@ class UrlPreview
 				$metadata['EMBED'] = '<iframe src="'.$url.'" allowfullscreen="" width="'.$metadata['EXTRA']['VIDEO_WIDTH'].'" height="'.$metadata['EXTRA']['VIDEO_HEIGHT'].'" frameborder="0"></iframe>';
 			}
 
-			if ($metadata['EMBED'] || $metadata['EXTRA']['VIDEO'])
+			if ($metadata['EMBED'] || !empty($metadata['EXTRA']['VIDEO']))
 			{
 				return $metadata;
 			}

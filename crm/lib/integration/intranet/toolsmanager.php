@@ -3,7 +3,6 @@
 namespace Bitrix\Crm\Integration\Intranet;
 
 use Bitrix\Crm\Service\Container;
-use Bitrix\Crm\Service\Factory\Dynamic;
 use Bitrix\Intranet\Settings\Tools;
 use Bitrix\Main\Loader;
 
@@ -62,8 +61,7 @@ final class ToolsManager
 	{
 		if (\CCrmOwnerType::isPossibleDynamicTypeId($entityTypeId))
 		{
-			$factory = Container::getInstance()->getFactory($entityTypeId);
-			if ($factory instanceof Dynamic && CustomSectionProvider::hasCustomSection($factory))
+			if ($this->isEntityTypeIdExternal($entityTypeId))
 			{
 				return $this->checkExternalDynamicAvailability();
 			}
