@@ -41,6 +41,9 @@ Loc::loadMessages(__FILE__);
 
 class DashboardTable extends DataManager
 {
+	const MAX_NAME_LENGTH = 50;
+	const MAX_URL_LENGTH = 1024;
+
 	/**
 	 * Returns DB table name for entity.
 	 *
@@ -146,7 +149,7 @@ class DashboardTable extends DataManager
 	public static function validateName()
 	{
 		return [
-			new LengthValidator(null, 50),
+			new LengthValidator(null, static::MAX_NAME_LENGTH),
 		];
 	}
 
@@ -158,7 +161,7 @@ class DashboardTable extends DataManager
 	public static function validateUrl()
 	{
 		return [
-			new LengthValidator(null, 1024),
+			new LengthValidator(null, static::MAX_URL_LENGTH),
 		];
 	}
 }

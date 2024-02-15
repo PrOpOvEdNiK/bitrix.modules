@@ -2,7 +2,10 @@
 
 namespace Bitrix\Intranet\Settings;
 
+use Bitrix\Main\Analytics\AnalyticsEvent;
+use Bitrix\Main\ArgumentException;
 use Bitrix\Main\Result;
+use Bitrix\Main\Web\Json;
 
 class ToolsSettings extends AbstractSettings
 {
@@ -58,9 +61,40 @@ class ToolsSettings extends AbstractSettings
 			}
 		}
 
+		if (isset($this->data['tools-sort']))
+		{
+			try
+			{
+				$sortTools = Json::decode($this->data['tools-sort']);
+				Tools\ToolsManager::getInstance()->getSorter()->saveSort($sortTools);
+				$isChanged = true;
+				$analyticEvent = new AnalyticsEvent('changed_position_tool_by_dragdrop', 'settings', 'tools');
+				$toolSortByMenuId = [];
+
+				foreach ($this->baseTools as $tool)
+				{
+					$toolSortByMenuId[] = $tool->getMenuItemId();
+				}
+
+				foreach ($sortTools as $index => $savedToolMenuId)
+				{
+					$startIndex = array_search($savedToolMenuId, $toolSortByMenuId, true);
+
+					if (is_int($startIndex) && $startIndex !== $index)
+					{
+						$analyticEvent->setType($savedToolMenuId)
+							->setP1((string)$index)
+							->setP2((string)$startIndex)
+							->send();
+					}
+				}
+			}
+			catch (ArgumentException){}
+		}
+
 		if ($isChanged)
 		{
-			Tools\ToolsManager::getInstance()->changeFirstPageForAll();
+			Tools\ToolsManager::getInstance()->getFirstPageChanger()->changeForAllUsers();
 		}
 
 		return new Result();
@@ -76,6 +110,7 @@ class ToolsSettings extends AbstractSettings
 			$data['tools'][$tool->getId()] = [
 				'enabled' => $tool->isEnabled() && $tool->isEnabledSubgroups(),
 				'name' => $tool->getName(),
+				'menuId' => $tool->getMenuItemId(),
 				'code' => $tool->getOptionCode(),
 				'subgroups' => $tool->getSubgroups(),
 				'settings-path' => $tool->getSettingsPath() ? str_replace("#USER_ID#", $USER->GetID(), $tool->getSettingsPath()) : null,

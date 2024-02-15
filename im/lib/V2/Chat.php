@@ -3056,7 +3056,7 @@ abstract class Chat implements RegistryEntry, ActiveRecord, Im\V2\Rest\RestEntit
 
 	public function getEntityLink(): Im\V2\Chat\EntityLink
 	{
-		return Im\V2\Chat\EntityLink::getInstanceByChat($this);
+		return Im\V2\Chat\EntityLink::getInstance($this);
 	}
 
 	public function toRestFormat(array $option = []): array

@@ -8,6 +8,7 @@ use Bitrix\Calendar\Core\Queue\Message\Message;
 use Bitrix\Calendar\Core\Queue\Producer\Producer;
 use Bitrix\Calendar\ICal\MailInvitation\InvitationInfo;
 use Bitrix\Calendar\ICal\MailInvitation\SenderInvitation;
+use Bitrix\Calendar\Internals\Log\Logger;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\LoaderException;
 use Bitrix\Main\Localization\Loc;
@@ -21,7 +22,14 @@ use TypeError;
 class SendingEmailNotification implements Interfaces\Processor
 {
 	private const MAX_ATTEMPTS_INVITATION = 3;
-	private const INCREMENT_COUNTER_INVITATION = 1;
+	private const LOG_MARKER = 'DEBUG_CALENDAR_EMAIL_NOTIFICATION';
+
+	private Logger $logger;
+
+	public function __construct()
+	{
+		$this->logger = new Logger(self::LOG_MARKER);
+	}
 
 	/**
 	 * @throws ObjectPropertyException
@@ -32,50 +40,48 @@ class SendingEmailNotification implements Interfaces\Processor
 	 */
 	public function process(Interfaces\Message $message): string
 	{
-		$notificationInfo = $message->getBody();
-
-		if (!isset($notificationInfo['requestInvitation']))
+		$serializedNotificationData = $this->getSerializedNotificationData($message);
+		if (is_null($serializedNotificationData))
 		{
 			return self::REJECT;
 		}
 
 		try
 		{
-			$unserializeNotificationInfo = $this->getMailInfo($notificationInfo['requestInvitation']);
+			$notificationData = $this->unserializeNotificationData($serializedNotificationData);
 		}
-		catch (TypeError $e)
+		catch (TypeError $exception)
 		{
+			$this->logger->log($exception);
+
 			return self::REJECT;
 		}
 
-		if (!$this->isNotificationFieldsCorrect($unserializeNotificationInfo))
+		if (!$this->isNotificationFieldsCorrect($notificationData))
 		{
+			$this->logger->log($serializedNotificationData);
+
 			return self::REJECT;
 		}
 
-		$counterInvitation = $unserializeNotificationInfo['counterInvitations'] ?? 0;
-		$counterInvitation += self::INCREMENT_COUNTER_INVITATION;
-
-		$invitationInfo = new InvitationInfo(
-			$unserializeNotificationInfo['eventId'],
-			$unserializeNotificationInfo['addresserId'],
-			$unserializeNotificationInfo['receiverId'],
-			$unserializeNotificationInfo['type'],
-			$unserializeNotificationInfo['changeFields'] ?? [],
-			$counterInvitation,
+		$invitation = new InvitationInfo(
+			$notificationData['eventId'],
+			$notificationData['addresserId'],
+			$notificationData['receiverId'],
+			$notificationData['type'],
+			$notificationData['changeFields'] ?? [],
+			$notificationData['counterInvitation'] + 1,
 		);
 
-		$notification = $invitationInfo->getSenderInvitation();
-
+		$notification = $invitation->getSenderInvitation();
 		if (is_null($notification))
 		{
+			$this->logger->log($serializedNotificationData);
+
 			return self::REJECT;
 		}
 
-		$failSent = [];
 		$this->setLanguageId();
-		$notification->incrementCounterInvitations();
-
 		if ($notification->send())
 		{
 			$notification->executeAfterSuccessfulInvitation();
@@ -85,30 +91,48 @@ class SendingEmailNotification implements Interfaces\Processor
 
 		if ($notification->getCountAttempsSend() < self::MAX_ATTEMPTS_INVITATION)
 		{
-			self::sendMessageToQueue($unserializeNotificationInfo);
+			self::sendMessageToQueue($invitation->toArray());
 
 			return self::ACK;
 		}
 
+		$failSent = [];
 		$failSent[$notification->getEventParentId()] = $this->getDataForNotify($notification);
 		$this->sendFailSendNotify($failSent);
 
 		return self::REJECT;
 	}
 
-	private function isNotificationFieldsCorrect (array $notification): bool
+	private function getSerializedNotificationData(Interfaces\Message $message): ?string
 	{
+		$messageBody = $message->getBody();
+		if (!is_array($messageBody) || !isset($messageBody['requestInvitation']))
+		{
+			return null;
+		}
+
+		return $messageBody['requestInvitation'];
+	}
+
+	private function isNotificationFieldsCorrect (mixed $notification): bool
+	{
+		if (!is_array($notification))
+		{
+			return false;
+		}
+
 		return (
 			isset($notification['eventId'])
 			|| isset($notification['addresserId'])
 			|| isset($notification['receiverId'])
 			|| isset($notification['type'])
+			|| isset($notification['counterInvitation'])
 		);
 	}
 
-	private function getMailInfo(string $jsonNotificationInfo): mixed
+	private function unserializeNotificationData(string $serializeNotificationData): mixed
 	{
-		$notification = str_replace("\'", "'", $jsonNotificationInfo);
+		$notification = str_replace("\'", "'", $serializeNotificationData);
 		$notification = Emoji::decode($notification);
 
 		return unserialize($notification, ['allowed_classes' => false]);

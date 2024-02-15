@@ -370,17 +370,20 @@ class SecuritySettings extends AbstractSettings
 
 			foreach ($ipRightList as $right => $ipListString)
 			{
-				$ipList = array_map('trim', explode(',', $ipListString));
-
-				foreach ($userRightList[$right] as $user)
+				if (array_key_exists($right, $userRightList) && is_array($userRightList[$right]))
 				{
-					if (empty($ipSettings[$user]))
+					$ipList = array_map('trim', explode(',', $ipListString));
+
+					foreach ($userRightList[$right] as $user)
 					{
-						$ipSettings[$user] = $ipList;
-					}
-					else
-					{
-						$ipSettings[$user] = array_unique(array_merge($ipSettings[$user], $ipList));
+						if (empty($ipSettings[$user]))
+						{
+							$ipSettings[$user] = $ipList;
+						}
+						else
+						{
+							$ipSettings[$user] = array_unique(array_merge($ipSettings[$user], $ipList));
+						}
 					}
 				}
 			}

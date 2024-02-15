@@ -387,10 +387,11 @@ class Manager
 	 * @param int $logId Log record identifier returned by startQuery.
 	 * @param int $count How many data records was processed.
 	 * @param int $size Http response body size in bytes.
+	 * @param bool $isOverLimit True if there was limit over.
 	 *
 	 * @return void
 	 */
-	public function endQuery($logId, $count, $size = null)
+	public function endQuery($logId, $count, $size = null, $isOverLimit = false)
 	{
 		if (isset($this->stime[$logId]))
 		{
@@ -399,6 +400,7 @@ class Manager
 				'ROW_NUM' => $count,
 				'DATA_SIZE' => $size,
 				'REAL_TIME' => microtime(true) - $this->stime[$logId],
+				'IS_OVER_LIMIT' => $isOverLimit,
 			];
 
 			$updateResult = \Bitrix\BIConnector\LogTable::update($logId, $statData);

@@ -1070,7 +1070,7 @@ class Chat
 			'DISAPPEARING_TIME' => (int)$chat['DISAPPEARING_TIME'],
 			'PUBLIC' => $publicOption,
 			'ROLE' => mb_strtolower(self::getRole($chat)),
-			'ENTITY_LINK' => EntityLink::getInstance($chat['ENTITY_TYPE'] ?? '', $chat['ENTITY_ID'] ?? '', (int)$chat['ID'])->toArray(),
+			'ENTITY_LINK' => EntityLink::getInstance(\CIMChat::initChatByArray($chat))->toArray(),
 			'PERMISSIONS' => [
 				'MANAGE_USERS_ADD' => mb_strtolower((string)$chat['MANAGE_USERS_ADD']),
 				'MANAGE_USERS_DELETE' => mb_strtolower((string)$chat['MANAGE_USERS_DELETE']),

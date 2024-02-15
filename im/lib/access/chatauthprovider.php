@@ -141,12 +141,16 @@ class ChatAuthProvider extends \CAuthProvider
 			$accessCode = $helper->forSql($this->generateAccessCode($chatId));
 
 			$users = implode(',', $userIds);
-			$connection->queryExecute(/** @lang mysql */ "
-				INSERT INTO b_user_access (USER_ID, PROVIDER_ID, ACCESS_CODE)
-				SELECT ID, '{$providerId}', '{$accessCode}'
-				FROM b_user
-				WHERE ID IN({$users})
-			");
+
+			$sql = $helper->getInsertIgnore(
+				'b_user_access',
+				'(USER_ID, PROVIDER_ID, ACCESS_CODE)',
+				"SELECT ID, '{$providerId}', '{$accessCode}'
+					FROM b_user
+					WHERE ID IN({$users})"
+			);
+
+			$connection->queryExecute($sql);
 
 			foreach ($userIds as $uid)
 			{
@@ -239,24 +243,28 @@ class ChatAuthProvider extends \CAuthProvider
 			$providerId = $helper->forSql($this->id);
 			$accessCode = $helper->forSql($this->generateAccessCode($chatId));
 
-			$connection->queryExecute(/** @lang mysql */ "
-				INSERT INTO b_user_access (USER_ID, PROVIDER_ID, ACCESS_CODE)
-				SELECT R.USER_ID, '{$providerId}', '{$accessCode}'
-				FROM b_im_relation R 
-					INNER JOIN b_user U ON R.USER_ID = U.ID
-					LEFT JOIN b_user_access A 
-						ON U.ID = A.USER_ID
-						AND A.PROVIDER_ID = '{$providerId}'
-						AND A.ACCESS_CODE = '{$accessCode}'
-				WHERE 
-					R.CHAT_ID = {$chatId}
-					AND A.ID IS NULL
-					AND (CASE 
-						WHEN U.EXTERNAL_AUTH_ID = 'imconnector' AND POSITION('livechat|' in U.XML_Id) = 1 THEN 1
-						WHEN U.EXTERNAL_AUTH_ID = 'imconnector' THEN 0
-						ELSE 1
-					END) = 1
-			");
+			$sql = $helper->getInsertIgnore(
+				'b_user_access',
+				'(USER_ID, PROVIDER_ID, ACCESS_CODE)',
+				"SELECT R.USER_ID, '{$providerId}', '{$accessCode}'
+					FROM b_im_relation R 
+						INNER JOIN b_user U ON R.USER_ID = U.ID
+						LEFT JOIN b_user_access A 
+							ON U.ID = A.USER_ID
+							AND A.PROVIDER_ID = '{$providerId}'
+							AND A.ACCESS_CODE = '{$accessCode}'
+					WHERE 
+						R.CHAT_ID = {$chatId}
+						AND A.ID IS NULL
+						AND (CASE 
+							WHEN U.EXTERNAL_AUTH_ID = 'imconnector' AND POSITION('livechat|' in U.XML_Id) = 1 THEN 1
+							WHEN U.EXTERNAL_AUTH_ID = 'imconnector' THEN 0
+							ELSE 1
+						END) = 1"
+			);
+
+			$connection->queryExecute($sql);
+
 			$connection->queryExecute(/** @lang mysql */ "
 				DELETE FROM b_user_access
 				WHERE PROVIDER_ID = '{$providerId}'

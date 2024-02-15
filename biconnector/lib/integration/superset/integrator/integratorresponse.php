@@ -8,11 +8,13 @@ use Bitrix\Main\Error;
 abstract class IntegratorResponse
 {
 	public const STATUS_OK = 200;
+	public const STATUS_CREATED = 201;
 	public const STATUS_IN_PROGRESS = 202;
 	public const STATUS_NO_ACCESS = 403;
 	public const STATUS_NOT_FOUND = 404;
 	public const STATUS_SERVER_ERROR = 500;
 	public const STATUS_FROZEN = 555;
+	public const STATUS_SERVER_DOWN = 521;
 	public const STATUS_UNKNOWN = 0;
 
 	protected int $status;
@@ -34,6 +36,7 @@ abstract class IntegratorResponse
 	{
 		$availableStatuses = [
 			self::STATUS_OK,
+			self::STATUS_CREATED,
 			self::STATUS_NO_ACCESS,
 			self::STATUS_IN_PROGRESS,
 			self::STATUS_SERVER_ERROR,
@@ -66,7 +69,7 @@ abstract class IntegratorResponse
 
 	public function getStatus(): int
 	{
-		return $this->status;
+		return $this->status === 0 ? static::STATUS_SERVER_DOWN : $this->status;
 	}
 
 	public function setStatus(mixed $status): static

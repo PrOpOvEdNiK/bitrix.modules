@@ -11,14 +11,11 @@ class LimitManagerBox extends LimitManager
 	}
 
 	/**
-	 * Called on data export end.
-	 *
-	 * @param int $rowsCount How many data rows was exported.
-	 *
-	 * @return void
+	 * @inheritDoc
 	 */
-	public function fixLimit($rowsCount)
+	public function fixLimit(int $rowsCount): bool
 	{
+		return false;
 	}
 
 	/**

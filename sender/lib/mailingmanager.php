@@ -137,7 +137,9 @@ class MailingManager
 			}
 		}
 
-		if(in_array($postingSendStatus, [PostingManager::SEND_RESULT_CONTINUE, PostingManager::SEND_RESULT_ERROR], true))
+		if(
+			in_array($postingSendStatus, [PostingManager::SEND_RESULT_CONTINUE, PostingManager::SEND_RESULT_ERROR], true)
+		)
 		{
 			return Runtime\SenderJob::getAgentName($letterId);
 		}
@@ -152,7 +154,7 @@ class MailingManager
 
 		if (
 			$postingSendStatus === PostingManager::SEND_RESULT_WAITING_RECIPIENT
-			&& \Bitrix\Sender\PostingRecipientTable::hasUnprocessed($letter['POSTING_ID'])
+			|| \Bitrix\Sender\PostingRecipientTable::hasUnprocessed($letter['POSTING_ID'])
 		)
 		{
 			return Runtime\SenderJob::getAgentName($letterId);

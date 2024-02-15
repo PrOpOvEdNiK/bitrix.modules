@@ -764,7 +764,7 @@ abstract class Application
 	/**
 	 * Resets accelerator if any.
 	 */
-	public static function resetAccelerator()
+	public static function resetAccelerator(string $filename = null)
 	{
 		if (defined("BX_NO_ACCELERATOR_RESET"))
 		{
@@ -778,7 +778,14 @@ abstract class Application
 
 		if (function_exists("opcache_reset"))
 		{
-			opcache_reset();
+			if ($filename !== null)
+			{
+				opcache_invalidate($filename);
+			}
+			else
+			{
+				opcache_reset();
+			}
 		}
 		elseif (function_exists("wincache_refresh_if_changed"))
 		{

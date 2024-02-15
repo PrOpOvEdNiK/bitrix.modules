@@ -78,4 +78,11 @@ class Manager
 		$presets = self::getAllPresets($siteId);
 		return $presetId && array_key_exists($presetId, $presets) ? $presets[$presetId] : $presets['social'];
 	}
+
+	public static function hasOwnPreset(): bool
+	{
+		$siteId = defined('SITE_ID') ? SITE_ID : LeftMenu\Menu::getDefaultSiteId();
+
+		 return \CUserOptions::GetOption('intranet', 'left_menu_preset_' . $siteId, 'N') !== 'N';
+	}
 }

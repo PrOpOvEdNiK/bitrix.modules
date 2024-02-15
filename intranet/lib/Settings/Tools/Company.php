@@ -4,6 +4,7 @@ namespace Bitrix\Intranet\Settings\Tools;
 
 use Bitrix\Bitrix24\Feature;
 use Bitrix\Intranet\Site\Sections\TimemanSection;
+use Bitrix\Main\Config\Option;
 use Bitrix\Main\Event;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
@@ -80,6 +81,7 @@ class Company extends Tool
 					'modulesList' => ['timeman' => 'Y'],
 				]);
 				$event->send();
+				Option::set('bitrix24', 'feature_timeman', 'Y');
 			}
 
 			if ($this->getSubgroupCode('meetings') === $code && Feature::isFeatureEnabled('meeting') && !ModuleManager::isModuleInstalled('meeting'))
@@ -89,10 +91,39 @@ class Company extends Tool
 					'modulesList' => ['meeting' => 'Y'],
 				]);
 				$event->send();
+				Option::set('bitrix24', 'feature_meetings', 'Y');
 			}
 		}
 
 		parent::enableSubgroup($code);
+	}
+
+	public function disableSubgroup(string $code): void
+	{
+		if (Loader::includeModule('bitrix24'))
+		{
+			if ($this->getSubgroupCode('worktime') === $code && Feature::isFeatureEnabled('timeman') && ModuleManager::isModuleInstalled('timeman'))
+			{
+				ModuleManager::delete('timeman');
+				$event = new Event('bitrix24', 'OnManualModuleAddDelete', [
+					'modulesList' => ['timeman' => 'N'],
+				]);
+				$event->send();
+				Option::set('bitrix24', 'feature_timeman', 'N');
+			}
+
+			if ($this->getSubgroupCode('meetings') === $code && Feature::isFeatureEnabled('meeting') && ModuleManager::isModuleInstalled('meeting'))
+			{
+				ModuleManager::delete('meeting');
+				$event = new Event('bitrix24', 'OnManualModuleAddDelete', [
+					'modulesList' => ['meeting' => 'N'],
+				]);
+				$event->send();
+				Option::set('bitrix24', 'feature_meetings', 'N');
+			}
+		}
+
+		parent::disableSubgroup($code);
 	}
 
 	public function getSubgroupSettingsPath(): array

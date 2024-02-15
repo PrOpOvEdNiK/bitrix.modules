@@ -91,7 +91,7 @@ abstract class PresetAbstract implements PresetInterface
 		static $finalStructure;
 		if (!$finalStructure)
 		{
-			$finalStructure = $this->getSavedStructure() ?: $this->getStructure();
+			$finalStructure = $this->getSavedStructure() ?: $this->getToolsStructure() ?: $this->getStructure();
 		}
 		return $finalStructure;
 	}
@@ -152,6 +152,83 @@ abstract class PresetAbstract implements PresetInterface
 		}
 
 		return $savedStructure;
+	}
+
+	public function getToolsStructure(): ?array
+	{
+		if ($this instanceof Custom)
+		{
+			return null;
+		}
+
+		if (Manager::hasOwnPreset())
+		{
+			return null;
+		}
+
+		$savedToolsSort = Tools\ToolsManager::getInstance()->getSorter()->getSavedSort();
+
+		if ($savedToolsSort)
+		{
+			$savedToolsSort = array_values($savedToolsSort);
+			$structure = $this->getStructure();
+			$shownStructure = $structure['shown'];
+			$structureSortedByTools['hidden'] = $structure['hidden'];
+			$structureSortedByTools['shown'] = [];
+			$flattenShownStructure = [];
+
+			foreach ($shownStructure as $key => $value)
+			{
+				if (is_array($value))
+				{
+					$flattenShownStructure[] = $key;
+				}
+				else
+				{
+					$flattenShownStructure[] = $value;
+				}
+			}
+
+			$indexes = [];
+			$ids = [];
+
+			foreach ($savedToolsSort as $id)
+			{
+				$index = array_search($id, $flattenShownStructure, true);
+
+				if ($index !== false)
+				{
+					$indexes[] = $index;
+					$ids[] = $id;
+				}
+			}
+
+			sort($indexes);
+			$structureSortToolsItem = array_combine($indexes, $ids);
+
+			foreach ($structureSortToolsItem as $key => $value)
+			{
+				$flattenShownStructure[$key] = $value;
+			}
+
+			foreach ($flattenShownStructure as $key => $value)
+			{
+				$index = array_search($value, $shownStructure, true);
+
+				if ($index !== false)
+				{
+					$structureSortedByTools['shown'][$key] = $shownStructure[$index];
+				}
+				elseif (isset($shownStructure[$value]))
+				{
+					$structureSortedByTools['shown'][$value] = $shownStructure[$value];
+				}
+			}
+
+			return $structureSortedByTools;
+		}
+
+		return null;
 	}
 
 	public static function oldToNewStructure(array $oldData, array $newData): array

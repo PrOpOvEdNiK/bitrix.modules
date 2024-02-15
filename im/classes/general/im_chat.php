@@ -1154,7 +1154,7 @@ class CIMChat
 					'manager_list' => array(),
 					'date_create' => $arRes["CHAT_DATE_CREATE"]? \Bitrix\Main\Type\DateTime::createFromTimestamp($arRes["CHAT_DATE_CREATE"]): false,
 					'type' => $chatType,
-					'entity_link' => IM\V2\Chat\EntityLink::getInstance($arRes["ENTITY_TYPE"] ?? '', $arRes["ENTITY_ID"] ?? '', (int)$arRes['CHAT_ID'])->toRestFormat(),
+					'entity_link' => IM\V2\Chat\EntityLink::getInstance(self::initChatByArray($arRes))->toRestFormat(),
 					'permissions' => [
 						'manage_users_add' => mb_strtolower($arRes['MANAGE_USERS_ADD']),
 						'manage_users_delete' => mb_strtolower($arRes['MANAGE_USERS_DELETE']),
@@ -3144,6 +3144,7 @@ class CIMChat
 			$dbRes = $DB->Query($strSql, false, "File: ".__FILE__."<br>Line: ".__LINE__);
 			$arRes = $dbRes->Fetch();
 		}
+
 		if (!$arRes)
 		{
 			$GLOBALS["APPLICATION"]->ThrowException(GetMessage("IM_ERROR_AUTHORIZE_ERROR"), "AUTHORIZE_ERROR");
@@ -4351,18 +4352,23 @@ class CIMChat
 
 	public static function canDo(array $chatData, array $relations, string $action): bool
 	{
-		if (isset($chatData['CHAT_TYPE']))
-		{
-			$chatData['TYPE'] = $chatData['CHAT_TYPE'];
-		}
-
-		if (isset($chatData['CHAT_ENTITY_TYPE']))
-		{
-			$chatData['ENTITY_TYPE'] = $chatData['CHAT_ENTITY_TYPE'];
-		}
-
 		$chatData['RELATIONS'] = new IM\V2\RelationCollection($relations);
 
-		return Chat\ChatFactory::getInstance()->initChat($chatData)->canDo($action);
+		return self::initChatByArray($chatData)->canDo($action);
+	}
+
+	public static function initChatByArray(array $chatData): Chat
+	{
+		$preparedChatData = $chatData;
+		$preparedChatData['ID'] = $chatData['ID'] ?? $chatData['CHAT_ID'] ?? $chatData['ITEM_CID'] ?? null;
+		$preparedChatData['TYPE'] = $chatData['TYPE'] ?? $chatData['CHAT_TYPE'] ?? null;
+		$preparedChatData['ENTITY_TYPE'] = $chatData['ENTITY_TYPE'] ?? $chatData['CHAT_ENTITY_TYPE'] ?? null;
+		$preparedChatData['ENTITY_ID'] = $chatData['ENTITY_ID'] ?? $chatData['CHAT_ENTITY_ID'] ?? null;
+		$preparedChatData['ENTITY_DATA_1'] = $chatData['ENTITY_DATA_1'] ?? $chatData['CHAT_ENTITY_DATA_1'] ?? null;
+		$preparedChatData['ENTITY_DATA_2'] = $chatData['ENTITY_DATA_2'] ?? $chatData['CHAT_ENTITY_DATA_2'] ?? null;
+		$preparedChatData['ENTITY_DATA_3'] = $chatData['ENTITY_DATA_3'] ?? $chatData['CHAT_ENTITY_DATA_3'] ?? null;
+		$preparedChatData['DATE_CREATE'] = $chatData['DATE_CREATE'] ?? $chatData['CHAT_DATE_CREATE'] ?? null;
+
+		return Chat\ChatFactory::getInstance()->initChat($preparedChatData);
 	}
 }

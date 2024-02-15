@@ -358,6 +358,19 @@ class Recent
 
 			$result[$id] = $item;
 		}
+		if ($showOpenlines && !$onlyCopilotOption && Loader::includeModule('imopenlines'))
+		{
+			if (!isset($options['SKIP_UNDISTRIBUTED_OPENLINES']) || $options['SKIP_UNDISTRIBUTED_OPENLINES'] !== 'Y')
+			{
+				$recentOpenLines = \Bitrix\ImOpenLines\Recent::getRecent($userId, ['ONLY_IN_QUEUE' => true]);
+
+				if (is_array($recentOpenLines))
+				{
+					$result = array_merge($result, $recentOpenLines);
+				}
+			}
+		}
+
 		$result = array_values($result);
 
 		if ($options['JSON'])
@@ -828,7 +841,7 @@ class Recent
 				'USER_COUNTER' => (int)$row['CHAT_USER_COUNT'],
 				'RESTRICTIONS' => $restrictions,
 				'ROLE' => self::getRole($row),
-				'ENTITY_LINK' => EntityLink::getInstance($row['CHAT_ENTITY_TYPE'] ?? '', $row['CHAT_ENTITY_ID'] ?? '', (int)$row['ITEM_CID'])->toArray(),
+				'ENTITY_LINK' => EntityLink::getInstance(\CIMChat::initChatByArray($row))->toArray(),
 				'PERMISSIONS' => [
 					'MANAGE_USERS_ADD' => mb_strtolower($row['CHAT_MANAGE_USERS_ADD'] ?? ''),
 					'MANAGE_USERS_DELETE' => mb_strtolower($row['CHAT_MANAGE_USERS_DELETE'] ?? ''),

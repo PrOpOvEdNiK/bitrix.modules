@@ -1203,10 +1203,6 @@ class CIMMessenger
 					$message = new \Bitrix\Im\V2\Message($arParams);
 					$message->setParams($arFields['PARAMS'] ?? []);
 					$message->setMessageId($messageID);
-					$counters = (new \Bitrix\Im\V2\Message\ReadService((int)$arFields["FROM_USER_ID"]))
-						->onAfterMessageSend($message, $relationCollection, $arFields['SKIP_COUNTER_INCREMENTS'] === 'Y')
-						->getResult()['COUNTERS']
-					;
 					if ($arFields['MESSAGE_TYPE'] !== Bitrix\Im\V2\Chat::IM_TYPE_OPEN_LINE)
 					{
 						Sync\Logger::getInstance()->add(
@@ -1249,7 +1245,7 @@ class CIMMessenger
 					if (!$fakeRelation)
 					{
 						$counters = (new \Bitrix\Im\V2\Message\ReadService((int)$arFields["FROM_USER_ID"]))
-							->onAfterMessageSend($message, $relationCollection)
+							->onAfterMessageSend($message, $relationCollection, $arFields['SKIP_COUNTER_INCREMENTS'] === 'Y')
 							->getResult()['COUNTERS']
 						;
 					}
@@ -3383,6 +3379,11 @@ class CIMMessenger
 				),
 				'extra' => \Bitrix\Im\Common::getPullExtra()
 			));
+
+			if (!$cache)
+			{
+				\Bitrix\Pull\Event::send();
+			}
 		}
 
 		return $time;
@@ -3413,6 +3414,8 @@ class CIMMessenger
 				'params' => Array(),
 				'extra' => \Bitrix\Im\Common::getPullExtra()
 			));
+
+			\Bitrix\Pull\Event::send();
 		}
 
 		return true;

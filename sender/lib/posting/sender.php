@@ -239,6 +239,15 @@ class Sender
 
 		$this->changeStatusToPart();
 
+		// posting competed by status SENT_WITH_ERROR
+		if ($this->status === PostingTable::STATUS_SENT_WITH_ERRORS)
+		{
+			$this->resultCode = static::RESULT_SENT;
+			$this->threadStrategy->updateStatus(PostingThreadTable::STATUS_DONE);
+			static::unlock($this->postingId, $threadId);
+			return;
+		}
+
 		// posting not in right status
 		if ($this->status != PostingTable::STATUS_PART)
 		{

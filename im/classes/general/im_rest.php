@@ -985,6 +985,10 @@ class CIMRestService extends IRestService
 		{
 			$config['SKIP_OPENLINES'] = 'Y';
 		}
+		if ($arParams['SKIP_UNDISTRIBUTED_OPENLINES'] === 'Y')
+		{
+			$config['SKIP_UNDISTRIBUTED_OPENLINES'] = 'Y';
+		}
 		if (isset($arParams['ONLY_COPILOT']) && $arParams['ONLY_COPILOT'] === 'Y')
 		{
 			$config['ONLY_COPILOT'] = 'Y';

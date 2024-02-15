@@ -12,6 +12,7 @@
 *.dat
 
 /**/admin/
+!/**/lib/**/admin/
 /**/install/
 /**/lang/
 /**/public/

@@ -2,9 +2,9 @@
 
 namespace Bitrix\Intranet\Settings\Tools;
 
+use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ModuleManager;
-use Bitrix\Main\Loader;
 
 class Sites extends Tool
 {
@@ -52,6 +52,14 @@ class Sites extends Tool
 		return $this->isShopEnabled()
 			? 'menu_shop'
 			: 'menu_sites';
+	}
+
+	public function getAdditionalMenuItemIds(): array
+	{
+		return [
+			'menu_shop',
+			'menu_sites'
+		];
 	}
 
 	public function getSettingsPath(): ?string

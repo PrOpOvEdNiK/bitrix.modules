@@ -78,7 +78,7 @@ class CacheEngineFiles implements CacheEngineInterface, CacheEngineStatInterface
 	 *
 	 * @param string $fileName Absolute physical path.
 	 *
-	 * @return boolean
+	 * @return void
 	 */
 	private static function unlink($fileName)
 	{
@@ -91,11 +91,8 @@ class CacheEngineFiles implements CacheEngineInterface, CacheEngineStatInterface
 		if (file_exists($fileName))
 		{
 			@chmod($fileName, BX_FILE_PERMISSIONS);
-			if (@unlink($fileName))
-				return true;
+			@unlink($fileName);
 		}
-
-		return false;
 	}
 
 	/**
@@ -161,11 +158,7 @@ class CacheEngineFiles implements CacheEngineInterface, CacheEngineStatInterface
 		$documentRoot = Main\Loader::getDocumentRoot();
 		if (($filename !== false) && ($filename !== ""))
 		{
-			$result = static::unlink($documentRoot.$baseDir.$initDir.$filename);
-			if ($result)
-			{
-				Main\Application::resetAccelerator();
-			}
+			static::unlink($documentRoot.$baseDir.$initDir.$filename);
 		}
 		else
 		{
@@ -222,14 +215,12 @@ class CacheEngineFiles implements CacheEngineInterface, CacheEngineStatInterface
 					static::addAgent();
 				else
 					DeleteDirFilesEx($baseDir.$initDir);
-
-				Main\Application::resetAccelerator();
 			}
 		}
 	}
 
 	/**
-	 * Tries to put non blocking exclusive lock on the file.
+	 * Tries to put non-blocking exclusive lock on the file.
 	 * Returns true if file not exists, or lock was successfully got.
 	 *
 	 * @param string $fileName Absolute cache file path.
@@ -238,7 +229,6 @@ class CacheEngineFiles implements CacheEngineInterface, CacheEngineStatInterface
 	 */
 	protected function lock($fileName)
 	{
-
 		$wouldBlock = 0;
 		self::$lockHandles[$fileName] = @fopen($fileName, "r+");
 		if (self::$lockHandles[$fileName])

@@ -1055,7 +1055,6 @@ class CUpdateClientPartner
 	public static function ClearUpdateFolder($updatesDirFull)
 	{
 		CUpdateClientPartner::__DeleteDirFilesEx($updatesDirFull);
-		Application::resetAccelerator();
 	}
 
 	public static function LoadModulesUpdates(&$errorMessage, &$arUpdateDescription, $lang = false, $stableVersionsOnly = "Y", $arRequestedModules = array(), $bStrongList = false)

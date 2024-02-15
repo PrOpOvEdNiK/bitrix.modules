@@ -9,6 +9,7 @@ use Bitrix\Main\Event;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ModuleManager;
+use Bitrix\Main\Config\Option;
 
 class Automation extends Tool
 {
@@ -22,7 +23,7 @@ class Automation extends Tool
 	];
 	private function isListsEnabled(): bool
 	{
-		return !Loader::includeModule('bitrix24') || Feature::isFeatureEnabled('lists');
+		return Loader::includeModule('bitrix24') && Feature::isFeatureEnabled('lists');
 	}
 
 	private function getBizprocUrl(): string
@@ -66,7 +67,7 @@ class Automation extends Tool
 
 	public function enableSubgroup(string $code): void
 	{
-		if (Loader::includeModule('bitrix24') && Feature::isFeatureEnabled('lists'))
+		if ($this->isListsEnabled())
 		{
 			if ($this->getSubgroupCode('lists') === $code && !ModuleManager::isModuleInstalled('lists'))
 			{
@@ -75,6 +76,7 @@ class Automation extends Tool
 					'modulesList' => ['lists' => 'Y'],
 				]);
 				$event->send();
+				Option::set('bitrix24', 'feature_lists', 'Y');
 			}
 		}
 
@@ -88,6 +90,19 @@ class Automation extends Tool
 
 	public function disableSubgroup(string $code): void
 	{
+		if (Loader::includeModule('bitrix24'))
+		{
+			if ($this->getSubgroupCode('lists') === $code && ModuleManager::isModuleInstalled('lists'))
+			{
+				ModuleManager::delete('lists');
+				$event = new Event('bitrix24', 'OnManualModuleAddDelete', [
+					'modulesList' => ['lists' => 'N'],
+				]);
+				$event->send();
+				Option::set('bitrix24', 'feature_lists', 'N');
+			}
+		}
+
 		if ($this->getSubgroupCode('bizproc_script') === $code)
 		{
 			$this->clearScriptsCache();
@@ -124,7 +139,7 @@ class Automation extends Tool
 		{
 			if (
 				isset($item['id'], $item['available'], $item['menuData']['menu_item_id'], $item['title'])
-				&& $item['available']
+				&& $item['id'] === 'lists' ? $this->isListsEnabled() : $item['available']
 				&& in_array($item['id'], array_keys(self::AUTOMATION_SUBGROUPS_ID))
 			)
 			{
@@ -139,14 +154,6 @@ class Automation extends Tool
 					'infohelper-slider' => $infoHelperSlider[$item['id']] ?? null,
 				];
 			}
-		}
-
-		if (
-			!ModuleManager::isModuleInstalled('lists')
-			&& !(Loader::includeModule('bitrix24') && Feature::isFeatureEnabled('lists'))
-		)
-		{
-			unset($result['lists']);
 		}
 
 		return $result;

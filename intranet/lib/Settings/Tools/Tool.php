@@ -2,7 +2,6 @@
 
 namespace Bitrix\Intranet\Settings\Tools;
 
-use Bitrix\Intranet\CustomSection\Manager;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\DI\ServiceLocator;
 
@@ -26,6 +25,14 @@ abstract class Tool
 	}
 
 	public function getSubgroupSettingsPath(): array
+	{
+		return [];
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getAdditionalMenuItemIds(): array
 	{
 		return [];
 	}
@@ -152,11 +159,13 @@ abstract class Tool
 	private function setOptionDisabledState(string $optionCode): void
 	{
 		Option::set($this->getOptionName(), $optionCode, 'N');
+		ToolsManager::getInstance()->clearDisabledMenuItemIdList();
 	}
 
 	private function setOptionEnabledState(string $optionCode): void
 	{
 		Option::set($this->getOptionName(), $optionCode, 'Y');
+		ToolsManager::getInstance()->clearDisabledMenuItemIdList();
 	}
 
 	protected function clearCache(): void

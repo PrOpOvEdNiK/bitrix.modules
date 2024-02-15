@@ -49,7 +49,7 @@ final class SystemDashboardManager
 	private static function getDashboardLanguageCode(): string
 	{
 		$zone = null;
-		if (ModuleManager::isModuleInstalled('bitrix24'))
+		if (Loader::includeModule('bitrix24'))
 		{
 			$zone = \CBitrix24::getPortalZone();
 		}

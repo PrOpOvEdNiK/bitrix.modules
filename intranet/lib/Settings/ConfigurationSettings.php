@@ -16,7 +16,8 @@ use Bitrix\Location;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Location\Entity\Source\Config;
 use Bitrix\Main\Type\DateTime;
-use Bitrix\Intranet;
+use Bitrix\Bitrix24\Feature;
+
 class ConfigurationSettings extends AbstractSettings
 {
 	public const TYPE = 'configuration';
@@ -27,7 +28,6 @@ class ConfigurationSettings extends AbstractSettings
 	private const TIME_FORMAT_VALUE_24 = 24;
 	private const TIME_FORMAT_VALUE_12 = 12;
 	private bool $isBitrix24;
-
 	private ?DateTime $dateTime = null;
 
 	public function __construct(array $data = [])
@@ -497,13 +497,12 @@ class ConfigurationSettings extends AbstractSettings
 		return null;
 	}
 
-	private function getAllCanBuyTariff(): string
+	private function getAllCanBuyTariff(): array
 	{
-		return Option::get(
-			'bitrix24',
-			'buy_tariff_by_all',
-			'Y'
-		);
+		return [
+			'value' => Option::get('bitrix24', 'buy_tariff_by_all', 'Y'),
+			'isEnable' => Feature::isFeatureEnabled('buy_tariff_by_all'),
+		];
 	}
 
 	private function getStatusTrackOutMailsRead(): string
@@ -611,6 +610,7 @@ class ConfigurationSettings extends AbstractSettings
 	private function is24HourFormat(array $currentSite): string
 	{
 		$currentTimeFormat = str_replace($currentSite["FORMAT_DATE"]." ", "", $currentSite["FORMAT_DATETIME"]);
+
 		return $currentTimeFormat === 'HH:MI:SS' ? 'Y' : 'N';
 	}
 }

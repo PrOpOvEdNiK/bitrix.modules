@@ -41,6 +41,16 @@ abstract class Service
 	}
 
 	/**
+	 * Return Service ID for key restrictions
+	 *
+	 * @return string
+	 */
+	public static function getServiceId(): string
+	{
+		return static::$serviceId;
+	}
+
+	/**
 	 * Changes the language if it is exists and active.
 	 * Otherwise sets the language to the current one.
 	 *
@@ -283,32 +293,32 @@ abstract class Service
 					{
 						case 'EQUALS':
 						case 'IN_LIST':
-							$andFilter[$negate . '=' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '=' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						case 'CONTAINS':
-							$andFilter[$negate . '%' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '%' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						case 'REGEXP_PARTIAL_MATCH':
 						case 'REGEXP_EXACT_MATCH':
 							$canBeFiltered = false;
 							break;
 						case 'IS_NULL':
-							$andFilter[$negate . '=' . $subFilter['fieldName']] = false;
+							$andFilter[] = [$negate . '=' . $subFilter['fieldName'] => false];
 							break;
 						case 'BETWEEN':
-							$andFilter[$negate . '><' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '><' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						case 'NUMERIC_GREATER_THAN':
-							$andFilter[$negate . '>' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '>' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						case 'NUMERIC_GREATER_THAN_OR_EQUAL':
-							$andFilter[$negate . '>=' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '>=' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						case 'NUMERIC_LESS_THAN':
-							$andFilter[$negate . '<' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '<' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						case 'NUMERIC_LESS_THAN_OR_EQUAL':
-							$andFilter[$negate . '<=' . $subFilter['fieldName']] = $subFilter['values'];
+							$andFilter[] = [$negate . '<=' . $subFilter['fieldName'] => $subFilter['values']];
 							break;
 						default:
 							$canBeFiltered = false;
@@ -341,7 +351,19 @@ abstract class Service
 
 		if (isset($parameters['dateRange']) && is_array($parameters['dateRange']))
 		{
-			$timeFilterColumn = $parameters['configParams']['timeFilterColumn'] ?? '';
+			if (isset($parameters['configParams']['timeFilterColumn']))
+			{
+				$timeFilterColumn = $parameters['configParams']['timeFilterColumn'];
+			}
+			elseif (isset($parameters['configParams']['timefiltercolumn']))
+			{
+				$timeFilterColumn = $parameters['configParams']['timefiltercolumn'];
+			}
+			else
+			{
+				$timeFilterColumn = '';
+			}
+
 			$this->applyDateFilter($sqlWhere, $tableFields, $parameters['dateRange'], $timeFilterColumn);
 		}
 

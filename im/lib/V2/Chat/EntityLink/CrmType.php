@@ -9,37 +9,33 @@ class CrmType extends EntityLink
 {
 	protected const HAS_URL = true;
 
-	protected array $separatedEntityId;
+	protected string $crmType = '';
+	protected int $crmId = 0;
+
+	protected function __construct(string $entityId)
+	{
+		parent::__construct();
+		if (Loader::includeModule('crm'))
+		{
+			$this->extractCrmData($entityId);
+		}
+		$this->type = $this->crmType;
+	}
 
 	protected function getUrl(): string
 	{
-		if(!Loader::includeModule('crm'))
+		if($this->crmType === '' || $this->crmId === 0 || !Loader::includeModule('crm'))
 		{
 			return '';
 		}
 
-		$crmType = $this->getCrmEntityType();
-		$crmId = $this->getCrmEntityId();
-
-		if ($crmType === '' || $crmId === 0)
-		{
-			return '';
-		}
-
-		return \Bitrix\Im\Integration\Crm\Common::getLink($crmType, $crmId);
+		return \Bitrix\Im\Integration\Crm\Common::getLink($this->crmType, $this->crmId);
 	}
 
-	protected function getCrmEntityType(): string
+	protected function extractCrmData(string $rawCrmData): void
 	{
-		$this->separatedEntityId ??= explode('|', $this->id);
-
-		return $this->separatedEntityId[0] ?? '';
-	}
-
-	protected function getCrmEntityId(): int
-	{
-		$this->separatedEntityId ??= explode('|', $this->id);
-
-		return (int)($this->separatedEntityId[1] ?? 0);
+		$separatedEntityId = explode('|', $rawCrmData);
+		$this->crmType = $separatedEntityId[0] ?? '';
+		$this->crmId = (int)($separatedEntityId[1] ?? 0);
 	}
 }
