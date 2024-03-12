@@ -103,11 +103,21 @@ class EntityLink implements RestConvertible
 		$cache->endDataCache(['url' => $this->url]);
 	}
 
+	public static function cleanCache(int $chatId): void
+	{
+		Application::getInstance()->getCache()->cleanDir(static::getCacheDirByChatId($chatId));
+	}
+
 	private function getCacheDir(): string
 	{
-		$cacheSubDir = $this->chatId % 100;
+		return static::getCacheDirByChatId($this->chatId);
+	}
 
-		return "/bx/imc/chatentitylink/1/{$cacheSubDir}/{$this->chatId}";
+	private static function getCacheDirByChatId(int $chatId): string
+	{
+		$cacheSubDir = $chatId % 100;
+
+		return "/bx/imc/chatentitylink/1/{$cacheSubDir}/{$chatId}";
 	}
 
 	private function getCacheId(): string
@@ -120,6 +130,11 @@ class EntityLink implements RestConvertible
 		return '';
 	}
 
+	protected function getRestType(): string
+	{
+		return $this->type;
+	}
+
 	public static function getRestEntityName(): string
 	{
 		return 'entityLink';
@@ -128,7 +143,7 @@ class EntityLink implements RestConvertible
 	public function toRestFormat(array $option = []): array
 	{
 		return [
-			'type' => $this->type,
+			'type' => $this->getRestType(),
 			'url' => $this->url,
 		];
 	}
@@ -140,7 +155,7 @@ class EntityLink implements RestConvertible
 	public function toArray(array $options = []): array
 	{
 		return [
-			'TYPE' => $this->type,
+			'TYPE' => $this->getRestType(),
 			'URL' => $this->url,
 		];
 	}

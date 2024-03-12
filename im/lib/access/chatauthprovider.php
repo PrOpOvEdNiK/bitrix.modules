@@ -114,7 +114,7 @@ class ChatAuthProvider extends \CAuthProvider
 			$connection = \Bitrix\Main\Application::getConnection();
 			$helper = $connection->getSqlHelper();
 			$providerId = $helper->forSql($this->id);
-			$connection->queryExecute(/** @lang mysql */ "
+			$connection->queryExecute("
 				DELETE FROM b_user_access
 				WHERE PROVIDER_ID = '{$providerId}' AND USER_ID = {$userId} 
 			");
@@ -187,7 +187,7 @@ class ChatAuthProvider extends \CAuthProvider
 					$userIds[] = (int)$row['USER_ID'];
 				}
 
-				$connection->queryExecute(/** @lang mysql */ "
+				$connection->queryExecute("
 					DELETE FROM b_user_access
 					WHERE PROVIDER_ID = '{$providerId}' AND ACCESS_CODE = '{$accessCode}' 
 				");
@@ -198,7 +198,7 @@ class ChatAuthProvider extends \CAuthProvider
 				if (count($userIds) > 0)
 				{
 					$users = implode(',', $userIds);
-					$connection->queryExecute(/** @lang mysql */ "
+					$connection->queryExecute("
 						DELETE FROM b_user_access
 						WHERE PROVIDER_ID = '{$providerId}'
 							AND ACCESS_CODE = '{$accessCode}'
@@ -265,7 +265,7 @@ class ChatAuthProvider extends \CAuthProvider
 
 			$connection->queryExecute($sql);
 
-			$connection->queryExecute(/** @lang mysql */ "
+			$connection->queryExecute("
 				DELETE FROM b_user_access
 				WHERE PROVIDER_ID = '{$providerId}'
 					AND ACCESS_CODE = '{$accessCode}'
